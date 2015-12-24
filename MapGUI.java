@@ -13,7 +13,7 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
-import javafx.scene.Node;
+import javafx.scene.input.MouseEvent;
 import javafx.geometry.Insets;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
@@ -33,9 +33,15 @@ public class MapGUI extends Application {
 	private int tileCols;
 	private int tileRows;
 	private String defTilePath;
+	private String workingDir = System.getProperty("user.dir");
+	private String workToAsset = "../tile-game/core/assets/tileart/";
+	private String assetDir = workingDir + "/" + workToAsset;
+	private String selectedTile;
+	private String relativeSelectedTile;
+	private Image selectedTileImage;
 	private List<String> tileNames = new ArrayList<String>();
 	private int[][] idGrid;
-    	
+	
     public int convertNameToID(String tileName) {
     	int numTileNames = tileNames.size();
     	for (int i=0; i<numTileNames; i++) {
@@ -93,7 +99,7 @@ public class MapGUI extends Application {
     	
     	FileChooser defTileChooser = new FileChooser();
     	defTileChooser.setTitle("Choose default tile");
-    	defTileChooser.setInitialDirectory(new File(System.getProperty("user.dir")));
+    	defTileChooser.setInitialDirectory(new File(assetDir));
     	FileChooser.ExtensionFilter imgFilter = new FileChooser.ExtensionFilter("Images (*.png, *.jpg)", "*.png", "*.jpg");
     	defTileChooser.getExtensionFilters().add(imgFilter);
     	
@@ -104,8 +110,7 @@ public class MapGUI extends Application {
     			File defTileFile = defTileChooser.showOpenDialog(primaryStage);
     			if (defTileFile != null) {
     				// Convert absolute image location to relative location
-    				String workingDir = System.getProperty("user.dir");  				
-    				String relativePath = new File(workingDir).toURI().relativize(defTileFile.toURI()).getPath();
+    				String relativePath = new File(assetDir).toURI().relativize(defTileFile.toURI()).getPath();
     				
     				defTileText.setText(relativePath);
     			}
@@ -135,7 +140,7 @@ public class MapGUI extends Application {
     	//////////////////////
     	FileChooser openMapChooser = new FileChooser();
     	openMapChooser.setTitle("Open Map");
-    	openMapChooser.setInitialDirectory(new File(System.getProperty("user.dir")));
+    	openMapChooser.setInitialDirectory(new File(workingDir));
     	FileChooser.ExtensionFilter txtFilter = new FileChooser.ExtensionFilter("TXT files (*.txt)", "*.txt");
     	openMapChooser.getExtensionFilters().add(txtFilter);
     	
@@ -144,7 +149,7 @@ public class MapGUI extends Application {
     	//////////////////////
     	FileChooser saveMapChooser = new FileChooser();
     	saveMapChooser.setTitle("Save Map");
-    	saveMapChooser.setInitialDirectory(new File(System.getProperty("user.dir")));
+    	saveMapChooser.setInitialDirectory(new File(workingDir));
     	saveMapChooser.getExtensionFilters().add(txtFilter);
     	
     	
@@ -172,7 +177,7 @@ public class MapGUI extends Application {
     				// Get image and fill grid with default tile
     				Image defTileImage = null;
     				try {
-    					defTileImage = new Image(defTilePath);
+    					defTileImage = new Image("file:" + workToAsset + defTilePath);
     				} catch (IllegalArgumentException e) {
     					System.out.println("Default tile file not found or file out of map-maker directory");
     					System.exit(0);
@@ -186,6 +191,22 @@ public class MapGUI extends Application {
     						ImageView tempImageView = new ImageView();
     						tempImageView.setImage(defTileImage);
     						gp.add(tempImageView, j, i);
+    						
+    						// On mouse click of grid tiles
+    						tempImageView.setId(Integer.toString(i) + ":" + Integer.toString(j));
+    						tempImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
+    							@Override
+    							public void handle(MouseEvent event) {
+    								String idNumbers [] = tempImageView.getId().split(":");
+    								int x = Integer.parseInt(idNumbers[0]);
+    								int y = Integer.parseInt(idNumbers[1]);
+    								
+    								System.out.println(relativeSelectedTile);
+    								idGrid[y][x] = convertNameToID(relativeSelectedTile);
+    								tempImageView.setImage(selectedTileImage);
+    							}
+    						});  
+    						
     					}
     				}
     			}
@@ -252,9 +273,64 @@ public class MapGUI extends Application {
     	// Menu Bar    	
     	MenuBar menuBar = new MenuBar();
     	menuBar.getMenus().add(menuFile);
-    	    	
+
+    	//----------------------------------------------------------------------//
+    	
+    	// Add horizontal slider for tiles
+    	final ScrollPane hsp = new ScrollPane();
+    	final GridPane hgp = new GridPane();
+    	hsp.setContent(hgp);
+    	
+    	// Count tile art in directory
+    	File tileArtDirFile = new File(assetDir);
+    	//int numTileArt = tileArtDirFile.list().length;
+    	File[] tileArtDirList = tileArtDirFile.listFiles();
+    	int childCount = 0;
+    	for (File child : tileArtDirList) {
+   		
+    		childCount += 1;
+    		String tileArtPath = child.toString();
+    		String relativePath = new File(assetDir).toURI().relativize(child.toURI()).getPath();
+    		
+    		Image tileArtImage = null;
+			try {
+				tileArtImage = new Image("file:" + workToAsset + relativePath);
+			} catch (IllegalArgumentException e) {
+				System.out.println("Tile file not found or something...");
+				System.exit(0);
+			}
+
+			if (childCount == 1) {
+				tileSizeX = (int) tileArtImage.getWidth();
+				tileSizeY = (int) tileArtImage.getHeight();
+    		}
+			
+			ImageView hImageView = new ImageView();
+			hImageView.setImage(tileArtImage);
+			hgp.add(hImageView, childCount-1, 0);
+			
+			// On mouse click of asset tiles
+			hImageView.setId(Integer.toString(childCount-1));
+			hImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
+				@Override
+				public void handle(MouseEvent event) {
+					int id = Integer.parseInt(hImageView.getId());
+					selectedTile = tileArtDirList[id].toString();
+					relativeSelectedTile = new File(assetDir).toURI().relativize(tileArtDirList[id].toURI()).getPath();
+					try {
+						selectedTileImage = new Image("file:" + workToAsset + relativeSelectedTile);
+					} catch (IllegalArgumentException e) {
+						System.out.println("Tile file not found or something...");
+						System.exit(0);
+					}
+				}
+			});  
+    	}
+    	
+    	hsp.setMinHeight(tileSizeY + 20);
+    	
     	// Add elements to scene
-    	((VBox) scene.getRoot()).getChildren().addAll(menuBar, sp);
+    	((VBox) scene.getRoot()).getChildren().addAll(menuBar, sp, hsp);
     	    	
     	// Show GUI
     	primaryStage.setScene(scene);
