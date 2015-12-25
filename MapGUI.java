@@ -14,14 +14,16 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.input.MouseEvent;
+import javafx.scene.Node;
 import javafx.geometry.Insets;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
+import javafx.collections.ObservableList;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Optional;
 import java.util.Scanner;
-
+import java.util.NoSuchElementException;
 
 public class MapGUI extends Application {
     public static void main(String[] args) {
@@ -41,7 +43,7 @@ public class MapGUI extends Application {
 	private Image selectedTileImage;
 	private List<String> tileNames = new ArrayList<String>();
 	private int[][] idGrid;
-	
+		
     public int convertNameToID(String tileName) {
     	int numTileNames = tileNames.size();
     	for (int i=0; i<numTileNames; i++) {
@@ -201,7 +203,6 @@ public class MapGUI extends Application {
     								int x = Integer.parseInt(idNumbers[0]);
     								int y = Integer.parseInt(idNumbers[1]);
     								
-    								System.out.println(relativeSelectedTile);
     								idGrid[y][x] = convertNameToID(relativeSelectedTile);
     								tempImageView.setImage(selectedTileImage);
     							}
@@ -221,13 +222,74 @@ public class MapGUI extends Application {
     		public void handle(ActionEvent t) {
     			// load in tiles
     			File openMapFile = openMapChooser.showOpenDialog(primaryStage);
-    			/*Scanner mapFileScanner = new Scanner(openMapFile);
-    			mapTitle = mapFileScanner.nextLine();
-    	        inputRows = Integer.parseInt(mapFileScanner.nextLine());
-    	        inputCols = Integer.parseInt(mapFileScanner.nextLine());
-    	        */
-    		}
-    	});
+    			if (openMapFile != null) {
+    				tileNames.clear();
+    				gp.getChildren().clear();
+    				try {
+    					Scanner mapFileScanner = new Scanner(openMapFile);
+    					tileRows = Integer.parseInt(mapFileScanner.nextLine());
+    					tileCols = Integer.parseInt(mapFileScanner.nextLine());
+    					idGrid = new int[tileCols][tileRows];
+    					for (int i=0; i<tileRows; i++) {
+    						String tempRow = mapFileScanner.nextLine();
+    						String splitIDs [] = tempRow.split(" ");
+    						
+    						// First extract the idGrid data
+    						for (int j=0; j<tileCols; j++) {
+    							idGrid[j][i] = Integer.parseInt(splitIDs[j]);
+    						}
+    					}	
+    					// Now extract the tileNames data
+    					String kRow = mapFileScanner.nextLine();
+    					if (kRow != null) {
+    						while (kRow != null){
+    							String kSplit [] = kRow.split(":");
+    							tileNames.add(kSplit[0]);
+    							try {
+    								kRow = mapFileScanner.nextLine();
+    							} catch (NoSuchElementException e) {
+    								kRow = null;
+    							}
+    						}
+    					}
+    					// Now fill in grid
+        				for(int i=0; i<tileRows; i++){
+        					for(int j=0; j<tileCols; j++){
+        						
+        						Image inpTileImage = null;
+        						try {
+        							inpTileImage = new Image("file:" + workToAsset + tileNames.get(idGrid[j][i]));
+        						} catch (IllegalArgumentException e) {
+        	    					System.out.println("tile file not found or file out of map-maker directory");
+        	    					System.exit(0);
+        	    				}
+        						
+        						ImageView tempImageView = new ImageView();
+        						tempImageView.setImage(inpTileImage);
+        						gp.add(tempImageView, j, i);
+        						
+        						// On mouse click of grid tiles
+        						tempImageView.setId(Integer.toString(i) + ":" + Integer.toString(j));
+        						tempImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
+        							@Override
+        							public void handle(MouseEvent event) {
+        								String idNumbers [] = tempImageView.getId().split(":");
+        								int x = Integer.parseInt(idNumbers[0]);
+        								int y = Integer.parseInt(idNumbers[1]);
+        								
+        								idGrid[y][x] = convertNameToID(relativeSelectedTile);
+        								tempImageView.setImage(selectedTileImage);
+        							}
+        						}); 
+        					}
+        				}
+        				
+    				} catch (FileNotFoundException e) {
+    					System.out.println("File not found");
+    					System.exit(0);
+    				}
+    			}
+    	}});
     	
     	////////////////////////
     	// Save - menu button //
@@ -250,7 +312,7 @@ public class MapGUI extends Application {
     					}
     					int numTileNames = tileNames.size();
     					for (int i=0; i<numTileNames; i++) {
-    						String keyStr = tileNames.get(i) + " " + convertIDintToStr(i);
+    						String keyStr = tileNames.get(i) + ":" + convertIDintToStr(i);
     						saveWriter.println(keyStr);
     					}
     					saveWriter.close();
@@ -328,6 +390,8 @@ public class MapGUI extends Application {
     	}
     	
     	hsp.setMinHeight(tileSizeY + 20);
+    	
+    	//----------------------------------------------------------------------//
     	
     	// Add elements to scene
     	((VBox) scene.getRoot()).getChildren().addAll(menuBar, sp, hsp);
