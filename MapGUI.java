@@ -355,7 +355,7 @@ public class MapGUI extends Application {
   	
     	selectScrollPane.setContent(selectGridPane);
     	drawSelectionTiles();
-    	selectScrollPane.setMinHeight(tileSizeY + 20);
+    	selectScrollPane.setMinHeight(tileSizeY + 35);
     	
     	//----------------------------------------------------------------------//
     	/////////////////////
@@ -363,6 +363,7 @@ public class MapGUI extends Application {
     	/////////////////////
     	
     	TextField tileSearchBox = new TextField();
+    	tileSearchBox.setPromptText("Search");
     	tileSearchBox.setOnKeyReleased(new EventHandler<KeyEvent>() {
 				@Override
 				public void handle(KeyEvent event) {
@@ -397,11 +398,10 @@ public class MapGUI extends Application {
 		int childCount = 0;
 		for (File child : tileArtDirList) {			
 			childCount += 1;
-			if (child.toString().contains(searchString)) {
-				
-				String tileArtPath = child.toString();
-				String relativePath = new File(assetDir).toURI().relativize(child.toURI()).getPath();
-				
+			String tileArtPath = child.toString();
+			String relativePath = new File(assetDir).toURI().relativize(child.toURI()).getPath();
+			if (relativePath.contains(searchString)) {
+			
 				Image tileArtImage = null;
 				try {
 					tileArtImage = new Image("file:" + workToAsset + relativePath);
@@ -419,7 +419,10 @@ public class MapGUI extends Application {
 				selectImageView.setImage(tileArtImage);
 				selectGridPane.add(selectImageView, childCount-1, 0);
 				
-			// 	On mouse click of asset tiles
+				Text selectImageName = new Text(relativePath);
+				selectGridPane.add(selectImageName, childCount-1, 1);
+				
+				// 	On mouse click of asset tiles
 				selectImageView.setId(Integer.toString(childCount-1));
 				selectImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
 					@Override
