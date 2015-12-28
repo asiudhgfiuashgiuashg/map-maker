@@ -79,7 +79,7 @@ public class MapGUI extends Application {
     	primaryScene.setOnMouseClicked(new EventHandler<MouseEvent>() {
 			@Override
 			public void handle(MouseEvent event) {
-				System.out.println(event.getSceneX());
+				//System.out.println(event.getSceneX());
 			}
 		});  
     	
@@ -396,8 +396,9 @@ public class MapGUI extends Application {
 		selectGridPane.getChildren().clear();
 		int childCount = 0;
 		for (File child : tileArtDirList) {			
+			childCount += 1;
 			if (child.toString().contains(searchString)) {
-				childCount += 1;
+				
 				String tileArtPath = child.toString();
 				String relativePath = new File(assetDir).toURI().relativize(child.toURI()).getPath();
 				
