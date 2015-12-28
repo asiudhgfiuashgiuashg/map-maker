@@ -13,6 +13,8 @@ import javafx.scene.Scene;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.Node;
 import javafx.geometry.Insets;
@@ -34,16 +36,27 @@ public class MapGUI extends Application {
 	private int tileSizeY;
 	private int tileCols;
 	private int tileRows;
+	private int windowWidth = 400;
+	private int windowHeight = 250;
 	private String defTilePath;
 	private String workingDir = System.getProperty("user.dir");
 	private String workToAsset = "../tile-game/core/assets/tileart/";
 	private String assetDir = workingDir + "/" + workToAsset;
 	private String selectedTile;
 	private String relativeSelectedTile;
+	private String searchString = "";
 	private Image selectedTileImage;
 	private List<String> tileNames = new ArrayList<String>();
 	private int[][] idGrid;
+	
+	// Scroll pane and grid pane for tiles
+	final ScrollPane tileScrollPane = new ScrollPane();
+	final GridPane tileGrid = new GridPane();
 		
+	// Add horizontal slider for tiles
+	final ScrollPane selectScrollPane = new ScrollPane();
+	final GridPane selectGridPane = new GridPane();
+	
     public int convertNameToID(String tileName) {
     	int numTileNames = tileNames.size();
     	for (int i=0; i<numTileNames; i++) {
@@ -58,18 +71,26 @@ public class MapGUI extends Application {
     public String convertIDintToStr(int id) {
     	return String.format("%03d", id);
     }
-	
+
     @Override
     public void start(Stage primaryStage) {
     	primaryStage.setTitle("MapGUI");
-    	Scene scene = new Scene(new VBox(), 400, 250);
+    	Scene primaryScene = new Scene(new VBox(), windowWidth, windowHeight);
+    	primaryScene.setOnMouseClicked(new EventHandler<MouseEvent>() {
+			@Override
+			public void handle(MouseEvent event) {
+				System.out.println(event.getSceneX());
+			}
+		});  
     	
-    	// Scroll pane and grid pane for tiles
-    	final ScrollPane sp = new ScrollPane();
-    	final GridPane gp = new GridPane();
-    	sp.setContent(gp);
+    	tileScrollPane.setContent(tileGrid);
     	
     	//----------------------------------------------------------------------//
+    	///////////////
+    	// File Menu //
+    	///////////////
+    	
+    	Menu menuFile = new Menu("File");
     	
     	//////////////////////
     	// New - dialog box //
@@ -81,18 +102,18 @@ public class MapGUI extends Application {
     	ButtonType okButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
     	newMapDialog.getDialogPane().getButtonTypes().addAll(okButtonType, ButtonType.CANCEL);
     	
-    	GridPane grid = new GridPane();
-    	grid.setHgap(10);
-    	grid.setVgap(10);
-    	grid.setPadding(new Insets(20, 150, 10, 10));
+    	GridPane newGrid = new GridPane();
+    	newGrid.setHgap(10);
+    	newGrid.setVgap(10);
+    	newGrid.setPadding(new Insets(20, 150, 10, 10));
 
     	TextField tileNumRows = new TextField("10");
     	TextField tileNumCols = new TextField("10");
 
-    	grid.add(new Label("Rows:"), 0, 0);
-    	grid.add(tileNumRows, 1, 0);
-    	grid.add(new Label("Columns:"), 0, 1);
-    	grid.add(tileNumCols, 1, 1);
+    	newGrid.add(new Label("Rows:"), 0, 0);
+    	newGrid.add(tileNumRows, 1, 0);
+    	newGrid.add(new Label("Columns:"), 0, 1);
+    	newGrid.add(tileNumCols, 1, 1);
     	
     	Text defTileText = new Text();
     	defTileText.setWrappingWidth(200);
@@ -119,11 +140,11 @@ public class MapGUI extends Application {
     		}
     	});
     	    	    	
-    	grid.add(new Label("Choose default tile"), 0, 2);
-    	grid.add(defTileText, 1, 2);
-    	grid.add(defTileChooserBtn, 2, 2);
+    	newGrid.add(new Label("Choose default tile"), 0, 2);
+    	newGrid.add(defTileText, 1, 2);
+    	newGrid.add(defTileChooserBtn, 2, 2);
     	
-    	newMapDialog.getDialogPane().setContent(grid);
+    	newMapDialog.getDialogPane().setContent(newGrid);
     	
     	newMapDialog.setResultConverter(dialogButton -> {
     	    if (dialogButton == okButtonType) {
@@ -155,10 +176,7 @@ public class MapGUI extends Application {
     	saveMapChooser.getExtensionFilters().add(txtFilter);
     	
     	
-    	//----------------------------------------------------------------------//
-    	
-    	// File Menu    	
-    	Menu menuFile = new Menu("File");
+    	//------------------------//
     	
     	///////////////////////
     	// New - menu button //
@@ -169,7 +187,7 @@ public class MapGUI extends Application {
     			Optional<String[]> newMapResult = newMapDialog.showAndWait();
     			if (newMapResult.isPresent()) {
     				// Clear grid
-    				gp.getChildren().clear();
+    				tileGrid.getChildren().clear();
     				
     				// Get inputs from the create map dialog box
     				tileRows = Integer.parseInt(newMapResult.get()[0]);
@@ -190,21 +208,21 @@ public class MapGUI extends Application {
     				for(int i=0; i<tileRows; i++){
     					for(int j=0; j<tileCols; j++){
     						idGrid[j][i] = convertNameToID(defTilePath);
-    						ImageView tempImageView = new ImageView();
-    						tempImageView.setImage(defTileImage);
-    						gp.add(tempImageView, j, i);
+    						ImageView tileImageView = new ImageView();
+    						tileImageView.setImage(defTileImage);
+    						tileGrid.add(tileImageView, j, i);
     						
     						// On mouse click of grid tiles
-    						tempImageView.setId(Integer.toString(i) + ":" + Integer.toString(j));
-    						tempImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
+    						tileImageView.setId(Integer.toString(i) + ":" + Integer.toString(j));
+    						tileImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
     							@Override
     							public void handle(MouseEvent event) {
-    								String idNumbers [] = tempImageView.getId().split(":");
+    								String idNumbers [] = tileImageView.getId().split(":");
     								int x = Integer.parseInt(idNumbers[0]);
     								int y = Integer.parseInt(idNumbers[1]);
     								
     								idGrid[y][x] = convertNameToID(relativeSelectedTile);
-    								tempImageView.setImage(selectedTileImage);
+    								tileImageView.setImage(selectedTileImage);
     							}
     						});  
     						
@@ -224,15 +242,15 @@ public class MapGUI extends Application {
     			File openMapFile = openMapChooser.showOpenDialog(primaryStage);
     			if (openMapFile != null) {
     				tileNames.clear();
-    				gp.getChildren().clear();
+    				tileGrid.getChildren().clear();
     				try {
     					Scanner mapFileScanner = new Scanner(openMapFile);
     					tileRows = Integer.parseInt(mapFileScanner.nextLine());
     					tileCols = Integer.parseInt(mapFileScanner.nextLine());
     					idGrid = new int[tileCols][tileRows];
     					for (int i=0; i<tileRows; i++) {
-    						String tempRow = mapFileScanner.nextLine();
-    						String splitIDs [] = tempRow.split(" ");
+    						String readRow = mapFileScanner.nextLine();
+    						String splitIDs [] = readRow.split(" ");
     						
     						// First extract the idGrid data
     						for (int j=0; j<tileCols; j++) {
@@ -264,21 +282,21 @@ public class MapGUI extends Application {
         	    					System.exit(0);
         	    				}
         						
-        						ImageView tempImageView = new ImageView();
-        						tempImageView.setImage(inpTileImage);
-        						gp.add(tempImageView, j, i);
+        						ImageView tileImageView = new ImageView();
+        						tileImageView.setImage(inpTileImage);
+        						tileGrid.add(tileImageView, j, i);
         						
         						// On mouse click of grid tiles
-        						tempImageView.setId(Integer.toString(i) + ":" + Integer.toString(j));
-        						tempImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
+        						tileImageView.setId(Integer.toString(i) + ":" + Integer.toString(j));
+        						tileImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
         							@Override
         							public void handle(MouseEvent event) {
-        								String idNumbers [] = tempImageView.getId().split(":");
+        								String idNumbers [] = tileImageView.getId().split(":");
         								int x = Integer.parseInt(idNumbers[0]);
         								int y = Integer.parseInt(idNumbers[1]);
         								
         								idGrid[y][x] = convertNameToID(relativeSelectedTile);
-        								tempImageView.setImage(selectedTileImage);
+        								tileImageView.setImage(selectedTileImage);
         							}
         						}); 
         					}
@@ -327,77 +345,96 @@ public class MapGUI extends Application {
     		}
     	});
     	
-    	//----------------------------------------------------------------------//
-    	
     	// Add buttons to File dropdown
     	menuFile.getItems().addAll(newBtn, openBtn, saveBtn);
-
-    	// Menu Bar    	
-    	MenuBar menuBar = new MenuBar();
-    	menuBar.getMenus().add(menuFile);
-
+    	
     	//----------------------------------------------------------------------//
+    	////////////////////////
+    	// Tile Selection Bar //
+    	////////////////////////
+  	
+    	selectScrollPane.setContent(selectGridPane);
+    	drawSelectionTiles();
+    	selectScrollPane.setMinHeight(tileSizeY + 20);
     	
-    	// Add horizontal slider for tiles
-    	final ScrollPane hsp = new ScrollPane();
-    	final GridPane hgp = new GridPane();
-    	hsp.setContent(hgp);
+    	//----------------------------------------------------------------------//
+    	/////////////////////
+    	// Tile search bar //
+    	/////////////////////
     	
-    	// Count tile art in directory
-    	File tileArtDirFile = new File(assetDir);
-    	//int numTileArt = tileArtDirFile.list().length;
-    	File[] tileArtDirList = tileArtDirFile.listFiles();
-    	int childCount = 0;
-    	for (File child : tileArtDirList) {
-   		
-    		childCount += 1;
-    		String tileArtPath = child.toString();
-    		String relativePath = new File(assetDir).toURI().relativize(child.toURI()).getPath();
-    		
-    		Image tileArtImage = null;
-			try {
-				tileArtImage = new Image("file:" + workToAsset + relativePath);
-			} catch (IllegalArgumentException e) {
-				System.out.println("Tile file not found or something...");
-				System.exit(0);
-			}
-
-			if (childCount == 1) {
-				tileSizeX = (int) tileArtImage.getWidth();
-				tileSizeY = (int) tileArtImage.getHeight();
-    		}
-			
-			ImageView hImageView = new ImageView();
-			hImageView.setImage(tileArtImage);
-			hgp.add(hImageView, childCount-1, 0);
-			
-			// On mouse click of asset tiles
-			hImageView.setId(Integer.toString(childCount-1));
-			hImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
+    	TextField tileSearchBox = new TextField();
+    	tileSearchBox.setOnKeyReleased(new EventHandler<KeyEvent>() {
 				@Override
-				public void handle(MouseEvent event) {
-					int id = Integer.parseInt(hImageView.getId());
-					selectedTile = tileArtDirList[id].toString();
-					relativeSelectedTile = new File(assetDir).toURI().relativize(tileArtDirList[id].toURI()).getPath();
-					try {
-						selectedTileImage = new Image("file:" + workToAsset + relativeSelectedTile);
-					} catch (IllegalArgumentException e) {
-						System.out.println("Tile file not found or something...");
-						System.exit(0);
-					}
+				public void handle(KeyEvent event) {
+					searchString = tileSearchBox.getText();
+					drawSelectionTiles();
 				}
 			});  
-    	}
-    	
-    	hsp.setMinHeight(tileSizeY + 20);
     	
     	//----------------------------------------------------------------------//
+    	//////////////////////
+    	// almost done boiz //
+    	//////////////////////
+    	
+    	// Menu Bar    	
+    	MenuBar menuBar = new MenuBar();
+    	menuBar.getMenus().addAll(menuFile);
     	
     	// Add elements to scene
-    	((VBox) scene.getRoot()).getChildren().addAll(menuBar, sp, hsp);
-    	    	
+    	((VBox) primaryScene.getRoot()).getChildren().addAll(menuBar, tileScrollPane, selectScrollPane, tileSearchBox);
+    	
     	// Show GUI
-    	primaryStage.setScene(scene);
+    	primaryStage.setScene(primaryScene);
     	primaryStage.show();
     }
+
+    public void drawSelectionTiles() {
+    	
+		// Count tile art in directory
+		File tileArtDirFile = new File(assetDir);
+		File[] tileArtDirList = tileArtDirFile.listFiles();
+		selectGridPane.getChildren().clear();
+		int childCount = 0;
+		for (File child : tileArtDirList) {			
+			if (child.toString().contains(searchString)) {
+				childCount += 1;
+				String tileArtPath = child.toString();
+				String relativePath = new File(assetDir).toURI().relativize(child.toURI()).getPath();
+				
+				Image tileArtImage = null;
+				try {
+					tileArtImage = new Image("file:" + workToAsset + relativePath);
+				} catch (IllegalArgumentException e) {
+					System.out.println("Tile file not found or something...");
+					System.exit(0);
+				}
+				
+				if (childCount == 1) {
+					tileSizeX = (int) tileArtImage.getWidth();
+					tileSizeY = (int) tileArtImage.getHeight();
+				}
+				
+				ImageView selectImageView = new ImageView();
+				selectImageView.setImage(tileArtImage);
+				selectGridPane.add(selectImageView, childCount-1, 0);
+				
+			// 	On mouse click of asset tiles
+				selectImageView.setId(Integer.toString(childCount-1));
+				selectImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
+					@Override
+					public void handle(MouseEvent event) {
+						int id = Integer.parseInt(selectImageView.getId());
+						selectedTile = tileArtDirList[id].toString();
+						relativeSelectedTile = new File(assetDir).toURI().relativize(tileArtDirList[id].toURI()).getPath();
+						try {
+							selectedTileImage = new Image("file:" + workToAsset + relativeSelectedTile);
+						} catch (IllegalArgumentException e) {
+							System.out.println("Tile file not found or something...");
+							System.exit(0);
+						}
+					}
+				});  
+			}
+		}
+	}
 }
