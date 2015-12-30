@@ -47,8 +47,9 @@ public class MapGUI extends Application {
 	private int windowHeight = 250;
 	private String defTilePath;
 	private String workingDir = System.getProperty("user.dir");
-	private String workToAsset = "../tile-game/core/assets/tileart/";
-	private String assetDir = workingDir + "/" + workToAsset;
+	private String workToTileAsset = "../tile-game/core/assets/tileart/";
+	private String workToObjectAsset = "../tile-game/core/assets/objectart/";
+	private String assetDir = workingDir + "/" + workToTileAsset;
 	private String selectedTile;
 	private String relativeSelectedTile;
 	private String searchString = "";
@@ -68,27 +69,6 @@ public class MapGUI extends Application {
 	final ScrollPane selectScrollPane = new ScrollPane();
 	final GridPane selectGridPane = new GridPane();
 	
-	private void initCanvas() {
-		// If it exists, remove old canvas
-		if (tileStackPane.getChildren().size() > 1){
-			tileStackPane.getChildren().remove(1);
-		}
-		
-		// Create new canvas
-		tileCanvas = new Canvas(tileSizeX*tileCols, tileSizeY*tileRows);
-		gc = tileCanvas.getGraphicsContext2D();
-		tileStackPane.getChildren().add(tileCanvas);
-		tileStackPane.getChildren().get(1).setId("canvas");
-		
-		tileCanvas.setOnMouseClicked(new EventHandler<MouseEvent>() {
-			@Override
-			public void handle(MouseEvent event) {
-				System.out.println(event.getX());
-				System.out.println(event.getY());
-			}
-		});  
-	}
-	
     private int convertNameToID(String tileName) {
     	int numTileNames = tileNames.size();
     	for (int i=0; i<numTileNames; i++) {
@@ -103,31 +83,89 @@ public class MapGUI extends Application {
     private String convertIDintToStr(int id) {
     	return String.format("%03d", id);
     }
+	
+	private void initCanvas() {
 
-    @Override
-    public void start(Stage primaryStage) {
+		tileStackPane.getChildren().clear();
+		
+		// Create new canvas
+		tileCanvas = new Canvas(tileSizeX*tileCols, tileSizeY*tileRows);
+		gc = tileCanvas.getGraphicsContext2D();
+		tileStackPane.getChildren().add(tileCanvas);
+		tileStackPane.getChildren().get(0).setId("canvas");
+		
+		// Set on mouse click
+		tileCanvas.setOnMouseClicked(new EventHandler<MouseEvent>() {
+			@Override
+			public void handle(MouseEvent event) {
+				System.out.println(event.getX());
+				System.out.println(event.getY());
+			}
+		});  
+		
+		// Add grid
     	tileScrollPane.setContent(tileStackPane);
     	tileStackPane.getChildren().add(tileGrid);
-    	tileStackPane.getChildren().get(0).setId("grid");
-
-    	// test image get rid of this
-    	try {
-			testImage = new Image("file:default-tile.png");
-		} catch (IllegalArgumentException e) {
-			System.out.println("Default tile file not found or file out of map-maker directory");
-			System.exit(0);
-		}
+    	tileStackPane.getChildren().get(1).setId("grid");
 		
-    	primaryStage.setTitle("MapGUI");
-    	Scene primaryScene = new Scene(new VBox(), windowWidth, windowHeight); 	
+	}
+	
+	private void drawSelectionTiles() {
     	
-    	//----------------------------------------------------------------------//
-    	///////////////
-    	// File Menu //
-    	///////////////
-    	
-    	Menu menuFile = new Menu("File");
-    	
+		// Count tile art in directory
+		File tileArtDirFile = new File(assetDir);
+		File[] tileArtDirList = tileArtDirFile.listFiles();
+		selectGridPane.getChildren().clear();
+		int childCount = 0;
+		for (File child : tileArtDirList) {			
+			childCount += 1;
+			String tileArtPath = child.toString();
+			String relativePath = new File(assetDir).toURI().relativize(child.toURI()).getPath();
+			if (relativePath.contains(searchString)) {
+			
+				Image tileArtImage = null;
+				try {
+					tileArtImage = new Image("file:" + workToTileAsset + relativePath);
+				} catch (IllegalArgumentException e) {
+					System.out.println("Tile file not found or something...");
+					System.exit(0);
+				}
+				
+				// First image in the directory sets the tile dimensions
+				if (childCount == 1) {
+					tileSizeX = (int) tileArtImage.getWidth();
+					tileSizeY = (int) tileArtImage.getHeight();
+				}
+				
+				ImageView selectImageView = new ImageView();
+				selectImageView.setImage(tileArtImage);
+				selectGridPane.add(selectImageView, childCount-1, 0);
+				
+				Text selectImageName = new Text(relativePath);
+				selectGridPane.add(selectImageName, childCount-1, 1);
+				
+				// 	On mouse click of asset tiles
+				selectImageView.setId(Integer.toString(childCount-1));
+				selectImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
+					@Override
+					public void handle(MouseEvent event) {
+						int id = Integer.parseInt(selectImageView.getId());
+						selectedTile = tileArtDirList[id].toString();
+						relativeSelectedTile = new File(assetDir).toURI().relativize(tileArtDirList[id].toURI()).getPath();
+						try {
+							selectedTileImage = new Image("file:" + workToTileAsset + relativeSelectedTile);
+						} catch (IllegalArgumentException e) {
+							System.out.println("Tile file not found or something...");
+							System.exit(0);
+						}
+					}
+				});  
+			}
+		}
+	}
+	
+    private void createFileMenu(Stage primaryStage, Menu menuFile) {
+ 	
     	//////////////////////
     	// New - dialog box //
     	//////////////////////
@@ -237,7 +275,7 @@ public class MapGUI extends Application {
     				// Get image and fill grid with default tile
     				Image defTileImage = null;
     				try {
-    					defTileImage = new Image("file:" + workToAsset + defTilePath);
+    					defTileImage = new Image("file:" + workToTileAsset + defTilePath);
     				} catch (IllegalArgumentException e) {
     					System.out.println("Default tile file not found or file out of map-maker directory");
     					System.exit(0);
@@ -323,7 +361,7 @@ public class MapGUI extends Application {
         						
         						Image inpTileImage = null;
         						try {
-        							inpTileImage = new Image("file:" + workToAsset + tileNames.get(idGrid[j][i]));
+        							inpTileImage = new Image("file:" + workToTileAsset + tileNames.get(idGrid[j][i]));
         						} catch (IllegalArgumentException e) {
         	    					System.out.println("tile file not found or file out of map-maker directory");
         	    					System.exit(0);
@@ -396,14 +434,9 @@ public class MapGUI extends Application {
     	
     	// Add buttons to File dropdown
     	menuFile.getItems().addAll(newBtn, openBtn, saveBtn);
-    	
-    	//----------------------------------------------------------------------//
-    	///////////////
-    	// Edit Menu //
-    	///////////////
-    	
-    	Menu menuEdit = new Menu("Edit");
-    	
+    }
+    
+    private void createEditMenu(Stage primaryStage, Menu menuEdit) {
     	MenuItem tileBtn = new MenuItem("Tiles");
     	tileBtn.setOnAction(new EventHandler<ActionEvent>() {
     		public void handle(ActionEvent t) {
@@ -433,6 +466,37 @@ public class MapGUI extends Application {
     	});
     	
     	menuEdit.getItems().addAll(tileBtn, objBtn);
+    }
+    
+    @Override
+    public void start(Stage primaryStage) {
+
+    	// test image get rid of this
+    	try {
+			testImage = new Image("file:default-tile.png");
+		} catch (IllegalArgumentException e) {
+			System.out.println("Default tile file not found or file out of map-maker directory");
+			System.exit(0);
+		}
+		
+    	primaryStage.setTitle("MapGUI");
+    	Scene primaryScene = new Scene(new VBox(), windowWidth, windowHeight); 	
+    	
+    	//----------------------------------------------------------------------//
+    	///////////////
+    	// File Menu //
+    	///////////////
+    	
+    	Menu menuFile = new Menu("File");
+    	createFileMenu(primaryStage, menuFile);
+    	
+    	//----------------------------------------------------------------------//
+    	///////////////
+    	// Edit Menu //
+    	///////////////
+    	
+    	Menu menuEdit = new Menu("Edit");
+    	createEditMenu(primaryStage, menuEdit);
     	
     	//----------------------------------------------------------------------//
     	////////////////////////
@@ -475,58 +539,4 @@ public class MapGUI extends Application {
     	primaryStage.setScene(primaryScene);
     	primaryStage.show();
     }
-
-    private void drawSelectionTiles() {
-    	
-		// Count tile art in directory
-		File tileArtDirFile = new File(assetDir);
-		File[] tileArtDirList = tileArtDirFile.listFiles();
-		selectGridPane.getChildren().clear();
-		int childCount = 0;
-		for (File child : tileArtDirList) {			
-			childCount += 1;
-			String tileArtPath = child.toString();
-			String relativePath = new File(assetDir).toURI().relativize(child.toURI()).getPath();
-			if (relativePath.contains(searchString)) {
-			
-				Image tileArtImage = null;
-				try {
-					tileArtImage = new Image("file:" + workToAsset + relativePath);
-				} catch (IllegalArgumentException e) {
-					System.out.println("Tile file not found or something...");
-					System.exit(0);
-				}
-				
-				// First image in the directory sets the tile dimensions
-				if (childCount == 1) {
-					tileSizeX = (int) tileArtImage.getWidth();
-					tileSizeY = (int) tileArtImage.getHeight();
-				}
-				
-				ImageView selectImageView = new ImageView();
-				selectImageView.setImage(tileArtImage);
-				selectGridPane.add(selectImageView, childCount-1, 0);
-				
-				Text selectImageName = new Text(relativePath);
-				selectGridPane.add(selectImageName, childCount-1, 1);
-				
-				// 	On mouse click of asset tiles
-				selectImageView.setId(Integer.toString(childCount-1));
-				selectImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
-					@Override
-					public void handle(MouseEvent event) {
-						int id = Integer.parseInt(selectImageView.getId());
-						selectedTile = tileArtDirList[id].toString();
-						relativeSelectedTile = new File(assetDir).toURI().relativize(tileArtDirList[id].toURI()).getPath();
-						try {
-							selectedTileImage = new Image("file:" + workToAsset + relativeSelectedTile);
-						} catch (IllegalArgumentException e) {
-							System.out.println("Tile file not found or something...");
-							System.exit(0);
-						}
-					}
-				});  
-			}
-		}
-	}
 }
