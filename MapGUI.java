@@ -9,7 +9,9 @@ import javafx.scene.layout.VBox;
 import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.scene.layout.GridPane;
+import javafx.scene.layout.StackPane;
 import javafx.scene.Scene;
+import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
@@ -17,12 +19,17 @@ import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.Node;
+import javafx.scene.canvas.Canvas;
+import javafx.scene.canvas.GraphicsContext;
+import javafx.scene.paint.Color;
 import javafx.geometry.Insets;
 import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.collections.ObservableList;
+import javafx.collections.FXCollections;
 import java.util.List;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.NoSuchElementException;
@@ -46,18 +53,43 @@ public class MapGUI extends Application {
 	private String relativeSelectedTile;
 	private String searchString = "";
 	private Image selectedTileImage;
+	private Image testImage;
 	private List<String> tileNames = new ArrayList<String>();
 	private int[][] idGrid;
+	private Canvas tileCanvas;
+	private GraphicsContext gc;
 	
 	// Scroll pane and grid pane for tiles
 	final ScrollPane tileScrollPane = new ScrollPane();
+	final StackPane tileStackPane = new StackPane();
 	final GridPane tileGrid = new GridPane();
 		
 	// Add horizontal slider for tiles
 	final ScrollPane selectScrollPane = new ScrollPane();
 	final GridPane selectGridPane = new GridPane();
 	
-    public int convertNameToID(String tileName) {
+	private void initCanvas() {
+		// If it exists, remove old canvas
+		if (tileStackPane.getChildren().size() > 1){
+			tileStackPane.getChildren().remove(1);
+		}
+		
+		// Create new canvas
+		tileCanvas = new Canvas(tileSizeX*tileCols, tileSizeY*tileRows);
+		gc = tileCanvas.getGraphicsContext2D();
+		tileStackPane.getChildren().add(tileCanvas);
+		tileStackPane.getChildren().get(1).setId("canvas");
+		
+		tileCanvas.setOnMouseClicked(new EventHandler<MouseEvent>() {
+			@Override
+			public void handle(MouseEvent event) {
+				System.out.println(event.getX());
+				System.out.println(event.getY());
+			}
+		});  
+	}
+	
+    private int convertNameToID(String tileName) {
     	int numTileNames = tileNames.size();
     	for (int i=0; i<numTileNames; i++) {
     		if (tileNames.get(i).equals(tileName)) {
@@ -68,22 +100,26 @@ public class MapGUI extends Application {
     	return numTileNames;
     }
     
-    public String convertIDintToStr(int id) {
+    private String convertIDintToStr(int id) {
     	return String.format("%03d", id);
     }
 
     @Override
     public void start(Stage primaryStage) {
+    	tileScrollPane.setContent(tileStackPane);
+    	tileStackPane.getChildren().add(tileGrid);
+    	tileStackPane.getChildren().get(0).setId("grid");
+
+    	// test image get rid of this
+    	try {
+			testImage = new Image("file:default-tile.png");
+		} catch (IllegalArgumentException e) {
+			System.out.println("Default tile file not found or file out of map-maker directory");
+			System.exit(0);
+		}
+		
     	primaryStage.setTitle("MapGUI");
-    	Scene primaryScene = new Scene(new VBox(), windowWidth, windowHeight);
-    	primaryScene.setOnMouseClicked(new EventHandler<MouseEvent>() {
-			@Override
-			public void handle(MouseEvent event) {
-				//System.out.println(event.getSceneX());
-			}
-		});  
-    	
-    	tileScrollPane.setContent(tileGrid);
+    	Scene primaryScene = new Scene(new VBox(), windowWidth, windowHeight); 	
     	
     	//----------------------------------------------------------------------//
     	///////////////
@@ -148,7 +184,7 @@ public class MapGUI extends Application {
     	
     	newMapDialog.setResultConverter(dialogButton -> {
     	    if (dialogButton == okButtonType) {
-    	    	// Return input data
+    	    	// input data
     	    	String[] returnStr = new String[3];
     	    	returnStr[0] = tileNumRows.getText();
     	    	returnStr[1] = tileNumCols.getText();
@@ -193,7 +229,11 @@ public class MapGUI extends Application {
     				tileRows = Integer.parseInt(newMapResult.get()[0]);
     				tileCols = Integer.parseInt(newMapResult.get()[1]);
     				defTilePath = newMapResult.get()[2];
-    				 
+    				
+    				// Create canvas of grid size
+    				initCanvas();
+    				gc.drawImage(testImage, 50, 50);
+    				
     				// Get image and fill grid with default tile
     				Image defTileImage = null;
     				try {
@@ -221,8 +261,10 @@ public class MapGUI extends Application {
     								int x = Integer.parseInt(idNumbers[0]);
     								int y = Integer.parseInt(idNumbers[1]);
     								
-    								idGrid[y][x] = convertNameToID(relativeSelectedTile);
-    								tileImageView.setImage(selectedTileImage);
+    								if (selectedTileImage != null) {
+    									idGrid[y][x] = convertNameToID(relativeSelectedTile);
+    									tileImageView.setImage(selectedTileImage);
+    								}
     							}
     						});  
     						
@@ -247,6 +289,11 @@ public class MapGUI extends Application {
     					Scanner mapFileScanner = new Scanner(openMapFile);
     					tileRows = Integer.parseInt(mapFileScanner.nextLine());
     					tileCols = Integer.parseInt(mapFileScanner.nextLine());
+    					
+        				// Create canvas of grid size
+        				initCanvas();
+        				gc.drawImage(testImage, 50, 50);
+    					
     					idGrid = new int[tileCols][tileRows];
     					for (int i=0; i<tileRows; i++) {
     						String readRow = mapFileScanner.nextLine();
@@ -295,8 +342,10 @@ public class MapGUI extends Application {
         								int x = Integer.parseInt(idNumbers[0]);
         								int y = Integer.parseInt(idNumbers[1]);
         								
-        								idGrid[y][x] = convertNameToID(relativeSelectedTile);
-        								tileImageView.setImage(selectedTileImage);
+        								if (selectedTileImage != null) {
+        									idGrid[y][x] = convertNameToID(relativeSelectedTile);
+        									tileImageView.setImage(selectedTileImage);
+        								}
         							}
         						}); 
         					}
@@ -349,6 +398,43 @@ public class MapGUI extends Application {
     	menuFile.getItems().addAll(newBtn, openBtn, saveBtn);
     	
     	//----------------------------------------------------------------------//
+    	///////////////
+    	// Edit Menu //
+    	///////////////
+    	
+    	Menu menuEdit = new Menu("Edit");
+    	
+    	MenuItem tileBtn = new MenuItem("Tiles");
+    	tileBtn.setOnAction(new EventHandler<ActionEvent>() {
+    		public void handle(ActionEvent t) {
+    			ObservableList<Node> children = FXCollections.observableArrayList(tileStackPane.getChildren());
+    			if (children.size() > 1) {
+    				if (children.get(1).getId().equals("canvas") ) {
+    					// Switch to tiles
+    					Collections.swap(children, 0, 1);
+    					tileStackPane.getChildren().setAll(children);
+    				}
+    			}
+    		}
+    	});
+    	
+    	MenuItem objBtn = new MenuItem("Objects");
+    	objBtn.setOnAction(new EventHandler<ActionEvent>() {
+    		public void handle(ActionEvent t) {
+    			ObservableList<Node> children = FXCollections.observableArrayList(tileStackPane.getChildren());
+    			if (children.size() > 1) {
+    				if (children.get(1).getId().equals("grid") ) {
+    					// Switch to objects
+    					Collections.swap(children, 0, 1);
+    					tileStackPane.getChildren().setAll(children);
+    				}
+    			}
+    		}
+    	});
+    	
+    	menuEdit.getItems().addAll(tileBtn, objBtn);
+    	
+    	//----------------------------------------------------------------------//
     	////////////////////////
     	// Tile Selection Bar //
     	////////////////////////
@@ -371,6 +457,7 @@ public class MapGUI extends Application {
 					drawSelectionTiles();
 				}
 			});  
+		
     	
     	//----------------------------------------------------------------------//
     	//////////////////////
@@ -379,7 +466,7 @@ public class MapGUI extends Application {
     	
     	// Menu Bar    	
     	MenuBar menuBar = new MenuBar();
-    	menuBar.getMenus().addAll(menuFile);
+    	menuBar.getMenus().addAll(menuFile, menuEdit);
     	
     	// Add elements to scene
     	((VBox) primaryScene.getRoot()).getChildren().addAll(menuBar, tileScrollPane, selectScrollPane, tileSearchBox);
@@ -389,7 +476,7 @@ public class MapGUI extends Application {
     	primaryStage.show();
     }
 
-    public void drawSelectionTiles() {
+    private void drawSelectionTiles() {
     	
 		// Count tile art in directory
 		File tileArtDirFile = new File(assetDir);
@@ -410,6 +497,7 @@ public class MapGUI extends Application {
 					System.exit(0);
 				}
 				
+				// First image in the directory sets the tile dimensions
 				if (childCount == 1) {
 					tileSizeX = (int) tileArtImage.getWidth();
 					tileSizeY = (int) tileArtImage.getHeight();
