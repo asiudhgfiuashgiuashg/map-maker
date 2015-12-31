@@ -15,8 +15,10 @@ import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
+import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
 import javafx.scene.input.KeyEvent;
+import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
 import javafx.scene.Node;
 import javafx.scene.canvas.Canvas;
@@ -43,8 +45,8 @@ public class MapGUI extends Application {
 	private int tileSizeY;
 	private int tileCols;
 	private int tileRows;
-	private int windowWidth = 400;
-	private int windowHeight = 250;
+	private int windowWidth = 800;
+	private int windowHeight = 600;
 	private String defTilePath;
 	private String workingDir = System.getProperty("user.dir");
 	private String workToTileAsset = "../tile-game/core/assets/tileart/";
@@ -98,11 +100,45 @@ public class MapGUI extends Application {
 		tileStackPane.getChildren().add(tileCanvas);
 		tileStackPane.getChildren().get(0).setId("canvas");
 		
-		// Set on mouse click
+		// Set on mouse click for master canvas
 		tileCanvas.setOnMouseClicked(new EventHandler<MouseEvent>() {
 			@Override
 			public void handle(MouseEvent event) {
-				gc.drawImage(selectedObjectImage, event.getX(), event.getY());
+				if (event.getButton() == MouseButton.PRIMARY) {
+					if (selectedObjectImage != null) {
+						Canvas imgCanvas = new Canvas(selectedObjectImage.getWidth(), selectedObjectImage.getHeight());
+						imgCanvas.getGraphicsContext2D().drawImage(selectedObjectImage, 0, 0);
+						imgCanvas.setId("canvasImg");
+						
+						// the correction below is arbitrary. I can't find where the displacement is coming from
+						imgCanvas.setTranslateX(event.getX() - 288 - selectedObjectImage.getWidth()/2);
+						imgCanvas.setTranslateY(event.getY() - 288 - selectedObjectImage.getWidth()/2);
+						tileStackPane.getChildren().add(imgCanvas);
+						
+						// On drag, move object
+						imgCanvas.setOnMouseDragged(new EventHandler<MouseEvent>() {
+							@Override
+							public void handle(MouseEvent event) {
+								if (event.getButton() == MouseButton.PRIMARY) {
+									// Again, inexplicable arbitrary discpacements
+									imgCanvas.setTranslateX(event.getSceneX() - 289 - selectedObjectImage.getWidth()/2);
+									imgCanvas.setTranslateY(event.getSceneY() - 314 - selectedObjectImage.getHeight()/2);
+								}
+							}
+						});
+						
+						// On right click, delete image
+						imgCanvas.setOnMouseClicked(new EventHandler<MouseEvent>() {
+							@Override
+							public void handle(MouseEvent event) {
+								if (event.getButton() == MouseButton.SECONDARY) {
+									tileStackPane.getChildren().remove(imgCanvas);
+								}
+							}
+						});
+						
+					}
+				}
 			}
 		});  
 		
@@ -153,14 +189,16 @@ public class MapGUI extends Application {
 				selectImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
 					@Override
 					public void handle(MouseEvent event) {
-						int id = Integer.parseInt(selectImageView.getId());
-						selectedTile = tileArtDirList[id].toString();
-						relativeSelectedTile = new File(tileAssetDir).toURI().relativize(tileArtDirList[id].toURI()).getPath();
-						try {
-							selectedTileImage = new Image("file:" + workToTileAsset + relativeSelectedTile);
-						} catch (IllegalArgumentException e) {
-							System.out.println("Tile file not found or something...");
-							System.exit(0);
+						if (event.getButton() == MouseButton.PRIMARY) {
+							int id = Integer.parseInt(selectImageView.getId());
+							selectedTile = tileArtDirList[id].toString();
+							relativeSelectedTile = new File(tileAssetDir).toURI().relativize(tileArtDirList[id].toURI()).getPath();
+							try {
+								selectedTileImage = new Image("file:" + workToTileAsset + relativeSelectedTile);
+							} catch (IllegalArgumentException e) {
+								System.out.println("Tile file not found or something...");
+								System.exit(0);
+							}
 						}
 					}
 				});  
@@ -201,14 +239,16 @@ public class MapGUI extends Application {
 						selectImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
 							@Override
 							public void handle(MouseEvent event) {
-								int id = Integer.parseInt(selectImageView.getId());
-								selectedObject = objectArtDirList[id].toString();
-								relativeSelectedObject = new File(objectAssetDir).toURI().relativize(objectArtDirList[id].toURI()).getPath();
-								try {
-									selectedObjectImage = new Image("file:" + workToObjectAsset + relativeSelectedObject);
-								} catch (IllegalArgumentException e) {
-									System.out.println("Object file not found or something...");
-									System.exit(0);
+								if (event.getButton() == MouseButton.PRIMARY) {
+									int id = Integer.parseInt(selectImageView.getId());
+									selectedObject = objectArtDirList[id].toString();
+									relativeSelectedObject = new File(objectAssetDir).toURI().relativize(objectArtDirList[id].toURI()).getPath();
+									try {
+										selectedObjectImage = new Image("file:" + workToObjectAsset + relativeSelectedObject);
+									} catch (IllegalArgumentException e) {
+										System.out.println("Object file not found or something...");
+										System.exit(0);
+									}
 								}
 							}
 						});  
@@ -346,13 +386,15 @@ public class MapGUI extends Application {
     						tileImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
     							@Override
     							public void handle(MouseEvent event) {
-    								String idNumbers [] = tileImageView.getId().split(":");
-    								int x = Integer.parseInt(idNumbers[0]);
-    								int y = Integer.parseInt(idNumbers[1]);
-    								
-    								if (selectedTileImage != null) {
-    									idGrid[y][x] = convertNameToID(relativeSelectedTile);
-    									tileImageView.setImage(selectedTileImage);
+    								if (event.getButton() == MouseButton.PRIMARY) {
+    									String idNumbers [] = tileImageView.getId().split(":");
+    									int x = Integer.parseInt(idNumbers[0]);
+    									int y = Integer.parseInt(idNumbers[1]);
+    									
+    									if (selectedTileImage != null) {
+    										idGrid[y][x] = convertNameToID(relativeSelectedTile);
+    										tileImageView.setImage(selectedTileImage);
+    									}
     								}
     							}
     						});  
@@ -492,9 +534,9 @@ public class MapGUI extends Application {
     		public void handle(ActionEvent t) {
     			ObservableList<Node> children = FXCollections.observableArrayList(tileStackPane.getChildren());
     			if (children.size() > 1) {
-    				if (children.get(1).getId().equals("canvas") ) {
+    				if (!children.get(children.size()-1).getId().equals("grid")) {
     					// Switch to tiles
-    					Collections.swap(children, 0, 1);
+    					Collections.swap(children, 0, children.size()-1);
     					tileStackPane.getChildren().setAll(children);
     					drawSelectionTiles();
     				}
@@ -507,9 +549,9 @@ public class MapGUI extends Application {
     		public void handle(ActionEvent t) {
     			ObservableList<Node> children = FXCollections.observableArrayList(tileStackPane.getChildren());
     			if (children.size() > 1) {
-    				if (children.get(1).getId().equals("grid") ) {
+    				if (children.get(children.size()-1).getId().equals("grid")) {
     					// Switch to objects
-    					Collections.swap(children, 0, 1);
+    					Collections.swap(children, 0, children.size()-1);
     					tileStackPane.getChildren().setAll(children);
     					drawSelectionObjects();
     				}
@@ -525,6 +567,9 @@ public class MapGUI extends Application {
 		
     	primaryStage.setTitle("MapGUI");
     	Scene primaryScene = new Scene(new VBox(), windowWidth, windowHeight); 	
+    	
+    	tileScrollPane.setPrefWidth(800);
+    	tileScrollPane.setPrefHeight(600);
     	
     	//----------------------------------------------------------------------//
     	///////////////
@@ -563,7 +608,7 @@ public class MapGUI extends Application {
 				public void handle(KeyEvent event) {
 					searchString = tileSearchBox.getText();
 					if (tileStackPane.getChildren().size() > 1) {
-						if (tileStackPane.getChildren().get(1).getId() == "grid") {
+						if (tileStackPane.getChildren().get(tileStackPane.getChildren().size()-1).getId() == "grid") {
 							drawSelectionTiles();
 						} else {
 							drawSelectionObjects();
