@@ -562,7 +562,13 @@ public class MapGUI extends Application {
 				@Override
 				public void handle(KeyEvent event) {
 					searchString = tileSearchBox.getText();
-					drawSelectionTiles();
+					if (tileStackPane.getChildren().size() > 1) {
+						if (tileStackPane.getChildren().get(1).getId() == "grid") {
+							drawSelectionTiles();
+						} else {
+							drawSelectionObjects();
+						}
+					}
 				}
 			});  
 		    	
