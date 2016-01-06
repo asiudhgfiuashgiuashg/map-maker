@@ -114,9 +114,8 @@ public class MapGUI extends Application {
 						// Set id of each object (canvas) to its file name and coordinates
 						imgCanvas.setId(relativeSelectedObject + "," + event.getX() + "," + event.getY());
 						
-						imgCanvas.setTranslateX(event.getSceneX() - selectedObjectImage.getWidth() / 2);
-						imgCanvas.setTranslateY(event.getSceneY() - selectedObjectImage.getWidth() / 2);
-            System.out.println("adding imgCanvas");
+						imgCanvas.setTranslateX(event.getX() - selectedObjectImage.getWidth() / 2);
+						imgCanvas.setTranslateY(event.getY() - selectedObjectImage.getWidth() / 2);
 						tilePane.getChildren().add(imgCanvas);
 						
 						// On drag, move object
