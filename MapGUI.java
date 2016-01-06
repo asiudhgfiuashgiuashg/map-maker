@@ -38,9 +38,9 @@ import java.util.Scanner;
 import java.util.NoSuchElementException;
 
 public class MapGUI extends Application {
-    public static void main(String[] args) {
-        launch(args);
-    }
+  public static void main(String[] args) {
+      launch(args);
+  }
 
 	private	int tileSizeX;
 	private int tileSizeY;
@@ -124,12 +124,14 @@ public class MapGUI extends Application {
 							public void handle(MouseEvent event) {
 								if (event.getButton() == MouseButton.PRIMARY) {
 									// Again, inexplicable arbitrary displacements
-									imgCanvas.setTranslateX(event.getSceneX() - selectedObjectImage.getWidth() / 2);
-									imgCanvas.setTranslateY(event.getSceneY() - selectedObjectImage.getHeight() / 2);
+                  double eventXInTilePane = event.getX() + imgCanvas.getTranslateX();
+                  double eventYInTilePane = event.getY() + imgCanvas.getTranslateY();
+									imgCanvas.setTranslateX(eventXInTilePane - selectedObjectImage.getWidth() / 2);
+									imgCanvas.setTranslateY(eventYInTilePane - selectedObjectImage.getHeight() / 2);
 									
 									String[] idString = imgCanvas.getId().split(",");
-									idString[1] = Double.toString(event.getSceneX() - 1);
-									idString[2] = Double.toString(event.getSceneY() - 26);
+									idString[1] = Double.toString(eventXInTilePane - 1);
+									idString[2] = Double.toString(eventXInTilePane- 26);
 									imgCanvas.setId(String.join(",", idString));
 								}							
 							}
