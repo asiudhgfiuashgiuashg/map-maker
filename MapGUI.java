@@ -47,6 +47,8 @@ public class MapGUI extends Application {
 	private int tileRows;
 	private int windowWidth = 800;
 	private int windowHeight = 600;
+	private int propWidth = 400;
+	private int propHeight = 250;
 	private String defTilePath;
 	private String workingDir = System.getProperty("user.dir");
 	private String workToTileAsset = "../tile-game/core/assets/tileart/";
@@ -91,7 +93,6 @@ public class MapGUI extends Application {
     }
 	
 	private void initCanvas() {
-
 		tileStackPane.getChildren().clear();
 		
 		// Create new canvas
@@ -108,11 +109,13 @@ public class MapGUI extends Application {
 					if (selectedObjectImage != null) {
 						Canvas imgCanvas = new Canvas(selectedObjectImage.getWidth(), selectedObjectImage.getHeight());
 						imgCanvas.getGraphicsContext2D().drawImage(selectedObjectImage, 0, 0);
-						imgCanvas.setId("canvasImg");
+						
+						// Set id of each object (canvas) to its file name and coordinates
+						imgCanvas.setId(relativeSelectedObject + "," + event.getX() + "," + event.getY());
 						
 						// the correction below is arbitrary. I can't find where the displacement is coming from
-						imgCanvas.setTranslateX(event.getX() - 288 - selectedObjectImage.getWidth()/2);
-						imgCanvas.setTranslateY(event.getY() - 288 - selectedObjectImage.getWidth()/2);
+						imgCanvas.setTranslateX(event.getSceneX() - 289 - selectedObjectImage.getWidth()/2);
+						imgCanvas.setTranslateY(event.getSceneY() - 314 - selectedObjectImage.getWidth()/2);
 						tileStackPane.getChildren().add(imgCanvas);
 						
 						// On drag, move object
@@ -120,23 +123,52 @@ public class MapGUI extends Application {
 							@Override
 							public void handle(MouseEvent event) {
 								if (event.getButton() == MouseButton.PRIMARY) {
-									// Again, inexplicable arbitrary discpacements
+									// Again, inexplicable arbitrary displacements
 									imgCanvas.setTranslateX(event.getSceneX() - 289 - selectedObjectImage.getWidth()/2);
 									imgCanvas.setTranslateY(event.getSceneY() - 314 - selectedObjectImage.getHeight()/2);
-								}
+									
+									// Update object id. AGAIN no idea where these offsets are coming from
+									String[] idString = imgCanvas.getId().split(",");
+									idString[1] = Double.toString(event.getSceneX() - 1);
+									idString[2] = Double.toString(event.getSceneY() - 26);
+									imgCanvas.setId(String.join(",", idString));
+								}							
 							}
 						});
 						
-						// On right click, delete image
+						// On right click delete image, on double click edit properties
 						imgCanvas.setOnMouseClicked(new EventHandler<MouseEvent>() {
 							@Override
 							public void handle(MouseEvent event) {
 								if (event.getButton() == MouseButton.SECONDARY) {
 									tileStackPane.getChildren().remove(imgCanvas);
 								}
+								if (event.getButton() == MouseButton.PRIMARY) {
+									if (event.getClickCount() == 2) {
+										Stage propStage = new Stage();
+										propStage.setTitle("Edit Properties - " + imgCanvas.getId().split(",")[0]);
+										
+										Scene propScene = new Scene(new VBox(), propWidth, propHeight);
+										propStage.setScene(propScene);
+										
+										Button propCloseBtn = new Button("OK");
+										propCloseBtn.setOnAction(new EventHandler<ActionEvent>() {
+								    		@Override
+								    		public void handle(ActionEvent e) {
+								    			System.out.println(imgCanvas.getId());
+								    			propStage.close();
+								    		}
+								    	});
+										
+										GridPane propGridPane = new GridPane();
+										propGridPane.add(propCloseBtn, 0, 0);
+										
+										((VBox) propScene.getRoot()).getChildren().addAll(propGridPane);
+										propStage.showAndWait();
+									}
+								}
 							}
 						});
-						
 					}
 				}
 			}
@@ -206,6 +238,7 @@ public class MapGUI extends Application {
 		}
 	}
 	
+	
 	private void drawSelectionObjects() {
 		selectGridPane.getChildren().clear();
 		
@@ -256,7 +289,8 @@ public class MapGUI extends Application {
 				}
 	}
 	
-    private void createFileMenu(Stage primaryStage, Menu menuFile) {
+    
+	private void createFileMenu(Stage primaryStage, Menu menuFile) {
  	
     	//////////////////////
     	// New - dialog box //
@@ -362,6 +396,7 @@ public class MapGUI extends Application {
     				
     				// Create canvas of grid size
     				initCanvas();
+    				drawSelectionTiles();
     				
     				// Get image and fill grid with default tile
     				Image defTileImage = null;
@@ -423,6 +458,7 @@ public class MapGUI extends Application {
     					
         				// Create canvas of grid size
         				initCanvas();
+        				drawSelectionTiles();
     					
     					idGrid = new int[tileCols][tileRows];
     					for (int i=0; i<tileRows; i++) {
@@ -528,7 +564,8 @@ public class MapGUI extends Application {
     	menuFile.getItems().addAll(newBtn, openBtn, saveBtn);
     }
     
-    private void createEditMenu(Stage primaryStage, Menu menuEdit) {
+    
+	private void createEditMenu(Stage primaryStage, Menu menuEdit) {
     	MenuItem tileBtn = new MenuItem("Tiles");
     	tileBtn.setOnAction(new EventHandler<ActionEvent>() {
     		public void handle(ActionEvent t) {
@@ -562,7 +599,8 @@ public class MapGUI extends Application {
     	menuEdit.getItems().addAll(tileBtn, objBtn);
     }
     
-    @Override
+    
+	@Override
     public void start(Stage primaryStage) {
 		
     	primaryStage.setTitle("MapGUI");
