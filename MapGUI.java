@@ -61,7 +61,7 @@ public class MapGUI extends Application {
   private Image selectedTileImage;
   private Image selectedObjectImage;
   private Image testImage;
-  private List<String> tileNames = new ArrayList<String>();
+  private List < String > tileNames = new ArrayList < String > ();
   private int[][] idGrid;
   private Canvas tileCanvas;
   private GraphicsContext gc;
@@ -93,7 +93,7 @@ public class MapGUI extends Application {
     tileStackPane.getChildren().add(tileCanvas);
     tileStackPane.getChildren().get(0).setId("canvas");
     // Set on mouse click for master canvas
-    tileCanvas.setOnMouseClicked(new EventHandler<MouseEvent>() {
+    tileCanvas.setOnMouseClicked(new EventHandler < MouseEvent > () {
       @Override
          public void handle(MouseEvent event) {
         if (event.getButton() == MouseButton.PRIMARY) {
@@ -107,7 +107,7 @@ public class MapGUI extends Application {
             imgCanvas.setTranslateY(event.getSceneY() - 314 - selectedObjectImage.getWidth() / 2);
             tileStackPane.getChildren().add(imgCanvas);
             // On drag, move object
-            imgCanvas.setOnMouseDragged(new EventHandler<MouseEvent>() {
+            imgCanvas.setOnMouseDragged(new EventHandler < MouseEvent > () {
               @Override
                      public void handle(MouseEvent event) {
                 if (event.getButton() == MouseButton.PRIMARY) {
@@ -124,7 +124,7 @@ public class MapGUI extends Application {
             }
             );
             // On right click delete image, on double click edit properties
-            imgCanvas.setOnMouseClicked(new EventHandler<MouseEvent>() {
+            imgCanvas.setOnMouseClicked(new EventHandler < MouseEvent > () {
               @Override
                      public void handle(MouseEvent event) {
                 if (event.getButton() == MouseButton.SECONDARY) {
@@ -137,7 +137,7 @@ public class MapGUI extends Application {
                     Scene propScene = new Scene(new VBox(), propWidth, propHeight);
                     propStage.setScene(propScene);
                     Button propCloseBtn = new Button("OK");
-                    propCloseBtn.setOnAction(new EventHandler<ActionEvent>() {
+                    propCloseBtn.setOnAction(new EventHandler < ActionEvent > () {
                       @Override
                                  public void handle(ActionEvent e) {
                         System.out.println(imgCanvas.getId());
@@ -195,7 +195,7 @@ public class MapGUI extends Application {
         selectGridPane.add(selectImageName, childCount - 1, 1);
         //  On mouse click of asset tiles
         selectImageView.setId(Integer.toString(childCount - 1));
-        selectImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
+        selectImageView.setOnMouseClicked(new EventHandler < MouseEvent > () {
           @Override
                public void handle(MouseEvent event) {
             if (event.getButton() == MouseButton.PRIMARY) {
@@ -242,7 +242,7 @@ public class MapGUI extends Application {
         selectGridPane.add(selectImageName, childCount - 1, 1);
         //  On mouse click of asset tiles
         selectImageView.setId(Integer.toString(childCount - 1));
-        selectImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
+        selectImageView.setOnMouseClicked(new EventHandler < MouseEvent > () {
           @Override
                public void handle(MouseEvent event) {
             if (event.getButton() == MouseButton.PRIMARY) {
@@ -267,7 +267,7 @@ public class MapGUI extends Application {
     //////////////////////
     // New - dialog box //
     //////////////////////
-    Dialog<String[]> newMapDialog = new Dialog<>();
+    Dialog < String[] > newMapDialog = new Dialog < > ();
     newMapDialog.setTitle("Create New Map");
     newMapDialog.setHeaderText(null);
     ButtonType okButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
@@ -292,7 +292,7 @@ public class MapGUI extends Application {
     FileChooser.ExtensionFilter imgFilter = new FileChooser.ExtensionFilter("Images (*.png, *.jpg)", "*.png", "*.jpg");
     defTileChooser.getExtensionFilters().add(imgFilter);
     Button defTileChooserBtn = new Button("Open");
-    defTileChooserBtn.setOnAction(new EventHandler<ActionEvent>() {
+    defTileChooserBtn.setOnAction(new EventHandler < ActionEvent > () {
       @Override
          public void handle(ActionEvent e) {
         File defTileFile = defTileChooser.showOpenDialog(primaryStage);
@@ -340,9 +340,9 @@ public class MapGUI extends Application {
     // New - menu button //
     ///////////////////////
     MenuItem newBtn = new MenuItem("New");
-    newBtn.setOnAction(new EventHandler<ActionEvent>() {
+    newBtn.setOnAction(new EventHandler < ActionEvent > () {
       public void handle(ActionEvent t) {
-        Optional<String[]>newMapResult = newMapDialog.showAndWait();
+        Optional < String[] > newMapResult = newMapDialog.showAndWait();
         if (newMapResult.isPresent()) {
           // Clear grid
           tileGrid.getChildren().clear();
@@ -373,7 +373,7 @@ public class MapGUI extends Application {
               tileGrid.add(tileImageView, j, i);
               // On mouse click of grid tiles
               tileImageView.setId(Integer.toString(i) + ":" + Integer.toString(j));
-              tileImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
+              tileImageView.setOnMouseClicked(new EventHandler < MouseEvent > () {
                 @Override
                         public void handle(MouseEvent event) {
                   if (event.getButton() == MouseButton.PRIMARY) {
@@ -398,7 +398,7 @@ public class MapGUI extends Application {
     // Open - menu button //
     ////////////////////////
     MenuItem openBtn = new MenuItem("Open");
-    openBtn.setOnAction(new EventHandler<ActionEvent>() {
+    openBtn.setOnAction(new EventHandler < ActionEvent > () {
       public void handle(ActionEvent t) {
         // load in tiles
         File openMapFile = openMapChooser.showOpenDialog(primaryStage);
@@ -451,7 +451,7 @@ public class MapGUI extends Application {
                 tileGrid.add(tileImageView, j, i);
                 // On mouse click of grid tiles
                 tileImageView.setId(Integer.toString(i) + ":" + Integer.toString(j));
-                tileImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
+                tileImageView.setOnMouseClicked(new EventHandler < MouseEvent > () {
                   @Override
                            public void handle(MouseEvent event) {
                     String idNumbers[] = tileImageView.getId().split(":");
@@ -479,7 +479,7 @@ public class MapGUI extends Application {
     // Save - menu button //
     ////////////////////////
     MenuItem saveBtn = new MenuItem("Save");
-    saveBtn.setOnAction(new EventHandler<ActionEvent>() {
+    saveBtn.setOnAction(new EventHandler < ActionEvent > () {
       public void handle(ActionEvent t) {
         File saveMapFile = saveMapChooser.showSaveDialog(primaryStage);
         if (saveMapFile != null) {
@@ -518,9 +518,9 @@ public class MapGUI extends Application {
   }
   private void createEditMenu(Stage primaryStage, Menu menuEdit) {
     MenuItem tileBtn = new MenuItem("Tiles");
-    tileBtn.setOnAction(new EventHandler<ActionEvent>() {
+    tileBtn.setOnAction(new EventHandler < ActionEvent > () {
       public void handle(ActionEvent t) {
-        ObservableList<Node> children = FXCollections.observableArrayList(tileStackPane.getChildren());
+        ObservableList < Node > children = FXCollections.observableArrayList(tileStackPane.getChildren());
         if (children.size() > 1) {
           if (!children.get(children.size() - 1).getId().equals("grid")) {
             // Switch to tiles
@@ -533,9 +533,9 @@ public class MapGUI extends Application {
     }
     );
     MenuItem objBtn = new MenuItem("Objects");
-    objBtn.setOnAction(new EventHandler<ActionEvent>() {
+    objBtn.setOnAction(new EventHandler < ActionEvent > () {
       public void handle(ActionEvent t) {
-        ObservableList<Node> children = FXCollections.observableArrayList(tileStackPane.getChildren());
+        ObservableList < Node > children = FXCollections.observableArrayList(tileStackPane.getChildren());
         if (children.size() > 1) {
           if (children.get(children.size() - 1).getId().equals("grid")) {
             // Switch to objects
@@ -580,7 +580,7 @@ public class MapGUI extends Application {
     /////////////////////
     TextField tileSearchBox = new TextField();
     tileSearchBox.setPromptText("Search");
-    tileSearchBox.setOnKeyReleased(new EventHandler<KeyEvent>() {
+    tileSearchBox.setOnKeyReleased(new EventHandler < KeyEvent > () {
       @Override
          public void handle(KeyEvent event) {
         searchString = tileSearchBox.getText();
