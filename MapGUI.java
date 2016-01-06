@@ -10,6 +10,7 @@ import javafx.scene.text.Text;
 import javafx.scene.text.TextAlignment;
 import javafx.scene.layout.GridPane;
 import javafx.scene.layout.StackPane;
+import javafx.scene.layout.Pane;
 import javafx.scene.Scene;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.control.*;
@@ -70,7 +71,7 @@ public class MapGUI extends Application {
 	
 	// Panes
 	final ScrollPane tileScrollPane = new ScrollPane();
-	final StackPane tileStackPane = new StackPane();
+	final Pane tileStackPane = new Pane();
 	final GridPane tileGrid = new GridPane();
 		
 	// Add horizontal slider for tiles
@@ -114,8 +115,9 @@ public class MapGUI extends Application {
 						imgCanvas.setId(relativeSelectedObject + "," + event.getX() + "," + event.getY());
 						
 						// the correction below is arbitrary. I can't find where the displacement is coming from
-						imgCanvas.setTranslateX(event.getSceneX() - 289 - selectedObjectImage.getWidth()/2);
-						imgCanvas.setTranslateY(event.getSceneY() - 314 - selectedObjectImage.getWidth()/2);
+						imgCanvas.setTranslateX(event.getSceneX() - selectedObjectImage.getWidth()/2);
+						imgCanvas.setTranslateY(event.getSceneY() - selectedObjectImage.getWidth()/2);
+            System.out.println("adding imgCanvas");
 						tileStackPane.getChildren().add(imgCanvas);
 						
 						// On drag, move object
@@ -124,8 +126,8 @@ public class MapGUI extends Application {
 							public void handle(MouseEvent event) {
 								if (event.getButton() == MouseButton.PRIMARY) {
 									// Again, inexplicable arbitrary displacements
-									imgCanvas.setTranslateX(event.getSceneX() - 289 - selectedObjectImage.getWidth()/2);
-									imgCanvas.setTranslateY(event.getSceneY() - 314 - selectedObjectImage.getHeight()/2);
+									imgCanvas.setTranslateX(event.getSceneX() - selectedObjectImage.getWidth()/2);
+									imgCanvas.setTranslateY(event.getSceneY() - selectedObjectImage.getHeight()/2);
 									
 									// Update object id. AGAIN no idea where these offsets are coming from
 									String[] idString = imgCanvas.getId().split(",");
