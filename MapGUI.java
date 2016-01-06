@@ -71,7 +71,7 @@ public class MapGUI extends Application {
 	
 	// Panes
 	final ScrollPane tileScrollPane = new ScrollPane();
-	final Pane tileStackPane = new Pane();
+	final Pane tilePane = new Pane();
 	final GridPane tileGrid = new GridPane();
 		
 	// Add horizontal slider for tiles
@@ -94,13 +94,13 @@ public class MapGUI extends Application {
     }
 	
 	private void initCanvas() {
-		tileStackPane.getChildren().clear();
+		tilePane.getChildren().clear();
 		
 		// Create new canvas
 		tileCanvas = new Canvas(tileSizeX*tileCols, tileSizeY*tileRows);
 		gc = tileCanvas.getGraphicsContext2D();
-		tileStackPane.getChildren().add(tileCanvas);
-		tileStackPane.getChildren().get(0).setId("canvas");
+		tilePane.getChildren().add(tileCanvas);
+		tilePane.getChildren().get(0).setId("canvas");
 		
 		// Set on mouse click for master canvas
 		tileCanvas.setOnMouseClicked(new EventHandler<MouseEvent>() {
@@ -114,11 +114,10 @@ public class MapGUI extends Application {
 						// Set id of each object (canvas) to its file name and coordinates
 						imgCanvas.setId(relativeSelectedObject + "," + event.getX() + "," + event.getY());
 						
-						// the correction below is arbitrary. I can't find where the displacement is coming from
-						imgCanvas.setTranslateX(event.getSceneX() - selectedObjectImage.getWidth()/2);
-						imgCanvas.setTranslateY(event.getSceneY() - selectedObjectImage.getWidth()/2);
+						imgCanvas.setTranslateX(event.getSceneX() - selectedObjectImage.getWidth() / 2);
+						imgCanvas.setTranslateY(event.getSceneY() - selectedObjectImage.getWidth() / 2);
             System.out.println("adding imgCanvas");
-						tileStackPane.getChildren().add(imgCanvas);
+						tilePane.getChildren().add(imgCanvas);
 						
 						// On drag, move object
 						imgCanvas.setOnMouseDragged(new EventHandler<MouseEvent>() {
@@ -126,10 +125,9 @@ public class MapGUI extends Application {
 							public void handle(MouseEvent event) {
 								if (event.getButton() == MouseButton.PRIMARY) {
 									// Again, inexplicable arbitrary displacements
-									imgCanvas.setTranslateX(event.getSceneX() - selectedObjectImage.getWidth()/2);
-									imgCanvas.setTranslateY(event.getSceneY() - selectedObjectImage.getHeight()/2);
+									imgCanvas.setTranslateX(event.getSceneX() - selectedObjectImage.getWidth() / 2);
+									imgCanvas.setTranslateY(event.getSceneY() - selectedObjectImage.getHeight() / 2);
 									
-									// Update object id. AGAIN no idea where these offsets are coming from
 									String[] idString = imgCanvas.getId().split(",");
 									idString[1] = Double.toString(event.getSceneX() - 1);
 									idString[2] = Double.toString(event.getSceneY() - 26);
@@ -143,7 +141,7 @@ public class MapGUI extends Application {
 							@Override
 							public void handle(MouseEvent event) {
 								if (event.getButton() == MouseButton.SECONDARY) {
-									tileStackPane.getChildren().remove(imgCanvas);
+									tilePane.getChildren().remove(imgCanvas);
 								}
 								if (event.getButton() == MouseButton.PRIMARY) {
 									if (event.getClickCount() == 2) {
@@ -177,9 +175,9 @@ public class MapGUI extends Application {
 		});  
 		
 		// Add grid
-    	tileScrollPane.setContent(tileStackPane);
-    	tileStackPane.getChildren().add(tileGrid);
-    	tileStackPane.getChildren().get(1).setId("grid");
+    	tileScrollPane.setContent(tilePane);
+    	tilePane.getChildren().add(tileGrid);
+    	tilePane.getChildren().get(1).setId("grid");
 		
 	}
 	
@@ -571,12 +569,12 @@ public class MapGUI extends Application {
     	MenuItem tileBtn = new MenuItem("Tiles");
     	tileBtn.setOnAction(new EventHandler<ActionEvent>() {
     		public void handle(ActionEvent t) {
-    			ObservableList<Node> children = FXCollections.observableArrayList(tileStackPane.getChildren());
+    			ObservableList<Node> children = FXCollections.observableArrayList(tilePane.getChildren());
     			if (children.size() > 1) {
     				if (!children.get(children.size()-1).getId().equals("grid")) {
     					// Switch to tiles
     					Collections.swap(children, 0, children.size()-1);
-    					tileStackPane.getChildren().setAll(children);
+    					tilePane.getChildren().setAll(children);
     					drawSelectionTiles();
     				}
     			}
@@ -586,12 +584,12 @@ public class MapGUI extends Application {
     	MenuItem objBtn = new MenuItem("Objects");
     	objBtn.setOnAction(new EventHandler<ActionEvent>() {
     		public void handle(ActionEvent t) {
-    			ObservableList<Node> children = FXCollections.observableArrayList(tileStackPane.getChildren());
+    			ObservableList<Node> children = FXCollections.observableArrayList(tilePane.getChildren());
     			if (children.size() > 1) {
     				if (children.get(children.size()-1).getId().equals("grid")) {
     					// Switch to objects
     					Collections.swap(children, 0, children.size()-1);
-    					tileStackPane.getChildren().setAll(children);
+    					tilePane.getChildren().setAll(children);
     					drawSelectionObjects();
     				}
     			}
@@ -647,8 +645,8 @@ public class MapGUI extends Application {
 				@Override
 				public void handle(KeyEvent event) {
 					searchString = tileSearchBox.getText();
-					if (tileStackPane.getChildren().size() > 1) {
-						if (tileStackPane.getChildren().get(tileStackPane.getChildren().size()-1).getId() == "grid") {
+					if (tilePane.getChildren().size() > 1) {
+						if (tilePane.getChildren().get(tilePane.getChildren().size()-1).getId() == "grid") {
 							drawSelectionTiles();
 						} else {
 							drawSelectionObjects();
