@@ -50,6 +50,7 @@ public class MapGUI extends Application {
 	private int windowHeight = 600;
 	private int propWidth = 400;
 	private int propHeight = 250;
+	private int defVisLayer = 3;
 	private String defTilePath;
 	private String workingDir = System.getProperty("user.dir");
 	private String workToTileAsset = "../tile-game/core/assets/tileart/";
@@ -112,7 +113,7 @@ public class MapGUI extends Application {
 						imgCanvas.getGraphicsContext2D().drawImage(selectedObjectImage, 0, 0);
 						
 						// Set id of each object (canvas) to its file name and coordinates
-						imgCanvas.setId(relativeSelectedObject + "," + event.getX() + "," + event.getY());
+						imgCanvas.setId(relativeSelectedObject + "," + event.getX() + "," + event.getY() + "," + defVisLayer);
 						
 						imgCanvas.setTranslateX(event.getX() - selectedObjectImage.getWidth() / 2);
 						imgCanvas.setTranslateY(event.getY() - selectedObjectImage.getWidth() / 2);
@@ -133,7 +134,7 @@ public class MapGUI extends Application {
 									// Update position in object's id
 									String[] idString = imgCanvas.getId().split(",");
 									idString[1] = Double.toString(eventXInTilePane);
-									idString[2] = Double.toString(eventXInTilePane);
+									idString[2] = Double.toString(eventYInTilePane);
 									imgCanvas.setId(String.join(",", idString));
 								}							
 							}
@@ -154,17 +155,39 @@ public class MapGUI extends Application {
 										Scene propScene = new Scene(new VBox(), propWidth, propHeight);
 										propStage.setScene(propScene);
 										
+										Label layerLabel = new Label("Visibility Layer:");
+										
+										// Get current visibility layer
+										String curVisLayer = imgCanvas.getId().split(",")[3];
+										TextField layerTextField = new TextField(curVisLayer);
+										
+										// Make sure character is numeric
+										layerTextField.addEventFilter(KeyEvent.KEY_TYPED, new EventHandler<KeyEvent>() {
+								            @Override
+								            public void handle(KeyEvent e) {
+								                if (layerTextField.getText().length() >= 1 || !Character.isDigit(e.getCharacter().charAt(0))) {
+								                    e.consume();
+								                }
+								            }
+								        });
+										
 										Button propCloseBtn = new Button("OK");
 										propCloseBtn.setOnAction(new EventHandler<ActionEvent>() {
 								    		@Override
 								    		public void handle(ActionEvent e) {
-								    			System.out.println(imgCanvas.getId());
+												String[] idString = imgCanvas.getId().split(",");
+												idString[3] = layerTextField.getText();
+												imgCanvas.setId(String.join(",", idString));
+
+												System.out.println(imgCanvas.getId());
 								    			propStage.close();
 								    		}
 								    	});
 										
 										GridPane propGridPane = new GridPane();
-										propGridPane.add(propCloseBtn, 0, 0);
+										propGridPane.add(layerLabel, 0, 0);
+										propGridPane.add(layerTextField, 1, 0);
+										propGridPane.add(propCloseBtn, 0, 1);
 										
 										((VBox) propScene.getRoot()).getChildren().addAll(propGridPane);
 										propStage.showAndWait();
