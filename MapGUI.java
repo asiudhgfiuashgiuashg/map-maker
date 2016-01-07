@@ -116,6 +116,7 @@ public class MapGUI extends Application {
 						
 						imgCanvas.setTranslateX(event.getX() - selectedObjectImage.getWidth() / 2);
 						imgCanvas.setTranslateY(event.getY() - selectedObjectImage.getWidth() / 2);
+						
 						tilePane.getChildren().add(imgCanvas);
 						
 						// On drag, move object
@@ -123,15 +124,16 @@ public class MapGUI extends Application {
 							@Override
 							public void handle(MouseEvent event) {
 								if (event.getButton() == MouseButton.PRIMARY) {
-									// Again, inexplicable arbitrary displacements
-                  double eventXInTilePane = event.getX() + imgCanvas.getTranslateX();
-                  double eventYInTilePane = event.getY() + imgCanvas.getTranslateY();
+									// Update position
+									double eventXInTilePane = event.getX() + imgCanvas.getTranslateX();
+									double eventYInTilePane = event.getY() + imgCanvas.getTranslateY();
 									imgCanvas.setTranslateX(eventXInTilePane - selectedObjectImage.getWidth() / 2);
 									imgCanvas.setTranslateY(eventYInTilePane - selectedObjectImage.getHeight() / 2);
 									
+									// Update position in object's id
 									String[] idString = imgCanvas.getId().split(",");
-									idString[1] = Double.toString(eventXInTilePane - 1);
-									idString[2] = Double.toString(eventXInTilePane- 26);
+									idString[1] = Double.toString(eventXInTilePane);
+									idString[2] = Double.toString(eventXInTilePane);
 									imgCanvas.setId(String.join(",", idString));
 								}							
 							}
