@@ -46,25 +46,32 @@ public class MapGUI extends Application {
 	private int tileSizeY;
 	private int tileCols;
 	private int tileRows;
+	
 	private int windowWidth = 800;
 	private int windowHeight = 600;
 	private int propWidth = 400;
 	private int propHeight = 250;
-	private int defVisLayer = 3;
+	
+	private int tileVisLayer = 1;
+	private int playerVisLayer = 5;
+	private int defVisLayer = 9;
+	
 	private String defTilePath;
 	private String workingDir = System.getProperty("user.dir");
 	private String workToTileAsset = "../tile-game/core/assets/tileart/";
 	private String workToObjectAsset = "../tile-game/core/assets/objectart/";
 	private String tileAssetDir = workingDir + "/" + workToTileAsset;
 	private String objectAssetDir = workingDir + "/" + workToObjectAsset;
+	
 	private String selectedTile;
 	private String relativeSelectedTile;
 	private String selectedObject;
 	private String relativeSelectedObject;
-	private String searchString = "";
 	private Image selectedTileImage;
 	private Image selectedObjectImage;
-	private Image testImage;
+	
+	private String searchString = "";
+		
 	private List<String> tileNames = new ArrayList<String>();
 	private int[][] idGrid;
 	private Canvas tileCanvas;
@@ -152,7 +159,7 @@ public class MapGUI extends Application {
 									if (event.getClickCount() == 2) {
 										Dialog<String> editDialog = new Dialog<>();
 										editDialog.setTitle("Edit Object Properties");
-										editDialog.setHeaderText(null);
+										editDialog.setHeaderText("Visibility Layers: Invisible = 0, Tiles = " + tileVisLayer + ", Player = " + playerVisLayer + ", Default = " + defVisLayer);
 
 										ButtonType okButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
 										editDialog.getDialogPane().getButtonTypes().addAll(okButtonType, ButtonType.CANCEL);
@@ -172,6 +179,19 @@ public class MapGUI extends Application {
 												}
 											}
 										});
+										
+										// Make sure layer is not player, tile layer, or null
+										layerTextField.addEventFilter(KeyEvent.KEY_RELEASED, new EventHandler<KeyEvent>() {
+											@Override
+											public void handle(KeyEvent e) {
+												Node okButton = editDialog.getDialogPane().lookupButton(okButtonType);
+												if (layerTextField.getText().equals(Integer.toString(playerVisLayer)) || layerTextField.getText().equals(Integer.toString(tileVisLayer)) || layerTextField.getText().equals("")) {
+													okButton.setDisable(true);
+												} else {
+													okButton.setDisable(false);
+												}
+											}
+										});
 
 										GridPane propGridPane = new GridPane();
 										propGridPane.add(layerLabel, 0, 0);
@@ -180,7 +200,11 @@ public class MapGUI extends Application {
 										editDialog.setResultConverter(dialogButton -> {
 											if (dialogButton == okButtonType) {
 												String[] idString = imgCanvas.getId().split(",");
-												idString[3] = layerTextField.getText();
+
+												// Make sure the text field isn't player, tile layer, or null
+												if (!(layerTextField.getText().equals(Integer.toString(playerVisLayer)) || layerTextField.getText().equals(Integer.toString(tileVisLayer)) || layerTextField.getText().equals(""))) {
+													idString[3] = layerTextField.getText();
+												}
 												imgCanvas.setId(String.join(",", idString));
 												System.out.println(imgCanvas.getId());
 											}
