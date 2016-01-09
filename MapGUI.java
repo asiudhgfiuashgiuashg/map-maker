@@ -167,7 +167,7 @@ public class MapGUI extends Application {
 										layerTextField.addEventFilter(KeyEvent.KEY_TYPED, new EventHandler<KeyEvent>() {
 											@Override
 											public void handle(KeyEvent e) {
-												if (layerTextField.getText().length() >= 1 || !Character.isDigit(e.getCharacter().charAt(0))) {
+												if (!Character.isDigit(e.getCharacter().charAt(0))) {
 													e.consume();
 												}
 											}
