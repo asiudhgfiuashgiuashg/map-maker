@@ -109,128 +109,86 @@ public class MapGUI extends Application {
 			public void handle(MouseEvent event) {
 				if (event.getButton() == MouseButton.PRIMARY) {
 					if (selectedObjectImage != null) {
-						Canvas imgCanvas = new Canvas(
-								selectedObjectImage.getWidth(),
-								selectedObjectImage.getHeight());
-						imgCanvas.getGraphicsContext2D()
-								.drawImage(selectedObjectImage, 0, 0);
+						Canvas imgCanvas = new Canvas(selectedObjectImage.getWidth(), selectedObjectImage.getHeight());
+						imgCanvas.getGraphicsContext2D().drawImage(selectedObjectImage, 0, 0);
 
 						// Set id of each object (canvas) to its file name and
 						// coordinates
-						imgCanvas.setId(relativeSelectedObject + ","
-								+ event.getX() + "," + event.getY() + ","
-								+ defVisLayer);
+						imgCanvas.setId(relativeSelectedObject + "," + event.getX() + "," + event.getY() + "," + defVisLayer);
 
-						imgCanvas.setTranslateX(event.getX()
-								- selectedObjectImage.getWidth() / 2);
-						imgCanvas.setTranslateY(event.getY()
-								- selectedObjectImage.getWidth() / 2);
+						imgCanvas.setTranslateX(event.getX() - selectedObjectImage.getWidth() / 2);
+						imgCanvas.setTranslateY(event.getY() - selectedObjectImage.getWidth() / 2);
 
 						tilePane.getChildren().add(imgCanvas);
 
 						// On drag, move object
-						imgCanvas.setOnMouseDragged(
-								new EventHandler<MouseEvent>() {
+						imgCanvas.setOnMouseDragged(new EventHandler<MouseEvent>() {
 							@Override
 							public void handle(MouseEvent event) {
 								if (event.getButton() == MouseButton.PRIMARY) {
 									// Update position
-									double eventXInTilePane = event.getX()
-											+ imgCanvas.getTranslateX();
-									double eventYInTilePane = event.getY()
-											+ imgCanvas.getTranslateY();
-									imgCanvas.setTranslateX(eventXInTilePane
-											- selectedObjectImage.getWidth()
-													/ 2);
-									imgCanvas.setTranslateY(eventYInTilePane
-											- selectedObjectImage.getHeight()
-													/ 2);
+									double eventXInTilePane = event.getX() + imgCanvas.getTranslateX();
+									double eventYInTilePane = event.getY() + imgCanvas.getTranslateY();
+									imgCanvas.setTranslateX(eventXInTilePane - selectedObjectImage.getWidth() / 2);
+									imgCanvas.setTranslateY(eventYInTilePane - selectedObjectImage.getHeight() / 2);
 
 									// Update position in object's id
-									String[] idString = imgCanvas.getId()
-											.split(",");
-									idString[1] = Double
-											.toString(eventXInTilePane);
-									idString[2] = Double
-											.toString(eventYInTilePane);
+									String[] idString = imgCanvas.getId().split(",");
+									idString[1] = Double.toString(eventXInTilePane);
+									idString[2] = Double.toString(eventYInTilePane);
 									imgCanvas.setId(String.join(",", idString));
 								}
 							}
 						});
 
-						// On right click delete image, on double click edit
-						// properties
-						imgCanvas.setOnMouseClicked(
-								new EventHandler<MouseEvent>() {
+						// On right click delete image, on double click edit properties
+						imgCanvas.setOnMouseClicked(new EventHandler<MouseEvent>() {
 							@Override
 							public void handle(MouseEvent event) {
-								if (event
-										.getButton() == MouseButton.SECONDARY) {
+								if (event.getButton() == MouseButton.SECONDARY) {
 									tilePane.getChildren().remove(imgCanvas);
 								}
 								if (event.getButton() == MouseButton.PRIMARY) {
 									if (event.getClickCount() == 2) {
-										Stage propStage = new Stage();
-										propStage.setTitle(
-												"Edit Properties - " + imgCanvas
-														.getId().split(",")[0]);
+										Dialog<String> editDialog = new Dialog<>();
+										editDialog.setTitle("Edit Object Properties");
+										editDialog.setHeaderText(null);
 
-										Scene propScene = new Scene(new VBox(),
-												propWidth, propHeight);
-										propStage.setScene(propScene);
-
-										Label layerLabel = new Label(
-												"Visibility Layer:");
+										ButtonType okButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
+										editDialog.getDialogPane().getButtonTypes().addAll(okButtonType, ButtonType.CANCEL);
+										
+										Label layerLabel = new Label("Visibility Layer:");
 
 										// Get current visibility layer
-										String curVisLayer = imgCanvas.getId()
-												.split(",")[3];
-										TextField layerTextField = new TextField(
-												curVisLayer);
+										String curVisLayer = imgCanvas.getId().split(",")[3];
+										TextField layerTextField = new TextField(curVisLayer);
 
 										// Make sure character is numeric
-										layerTextField.addEventFilter(
-												KeyEvent.KEY_TYPED,
-												new EventHandler<KeyEvent>() {
+										layerTextField.addEventFilter(KeyEvent.KEY_TYPED, new EventHandler<KeyEvent>() {
 											@Override
 											public void handle(KeyEvent e) {
-												if (layerTextField.getText()
-														.length() >= 1
-														|| !Character.isDigit(e
-																.getCharacter()
-																.charAt(0))) {
+												if (layerTextField.getText().length() >= 1 || !Character.isDigit(e.getCharacter().charAt(0))) {
 													e.consume();
 												}
-											}
-										});
-
-										Button propCloseBtn = new Button("OK");
-										propCloseBtn.setOnAction(
-												new EventHandler<ActionEvent>() {
-											@Override
-											public void handle(ActionEvent e) {
-												String[] idString = imgCanvas
-														.getId().split(",");
-												idString[3] = layerTextField
-														.getText();
-												imgCanvas.setId(String.join(",",
-														idString));
-
-												System.out.println(
-														imgCanvas.getId());
-												propStage.close();
 											}
 										});
 
 										GridPane propGridPane = new GridPane();
 										propGridPane.add(layerLabel, 0, 0);
 										propGridPane.add(layerTextField, 1, 0);
-										propGridPane.add(propCloseBtn, 0, 1);
 
-										((VBox) propScene.getRoot())
-												.getChildren()
-												.addAll(propGridPane);
-										propStage.showAndWait();
+										editDialog.setResultConverter(dialogButton -> {
+											if (dialogButton == okButtonType) {
+												String[] idString = imgCanvas.getId().split(",");
+												idString[3] = layerTextField.getText();
+												imgCanvas.setId(String.join(",", idString));
+												System.out.println(imgCanvas.getId());
+											}
+											return null;
+										});
+										
+										editDialog.getDialogPane().setContent(propGridPane);
+										editDialog.showAndWait();
 									}
 								}
 							}
@@ -257,14 +215,12 @@ public class MapGUI extends Application {
 		for (File child : tileArtDirList) {
 			childCount += 1;
 			String tileArtPath = child.toString();
-			String relativePath = new File(tileAssetDir).toURI()
-					.relativize(child.toURI()).getPath();
+			String relativePath = new File(tileAssetDir).toURI().relativize(child.toURI()).getPath();
 			if (relativePath.contains(searchString)) {
 
 				Image tileArtImage = null;
 				try {
-					tileArtImage = new Image(
-							"file:" + workToTileAsset + relativePath);
+					tileArtImage = new Image("file:" + workToTileAsset + relativePath);
 				} catch (IllegalArgumentException e) {
 					System.out.println("Tile file not found or something...");
 					System.exit(0);
@@ -285,31 +241,22 @@ public class MapGUI extends Application {
 
 				// On mouse click of asset tiles
 				selectImageView.setId(Integer.toString(childCount - 1));
-				selectImageView
-						.setOnMouseClicked(new EventHandler<MouseEvent>() {
-							@Override
-							public void handle(MouseEvent event) {
-								if (event.getButton() == MouseButton.PRIMARY) {
-									int id = Integer
-											.parseInt(selectImageView.getId());
-									selectedTile = tileArtDirList[id]
-											.toString();
-									relativeSelectedTile = new File(
-											tileAssetDir).toURI().relativize(
-													tileArtDirList[id].toURI())
-													.getPath();
-									try {
-										selectedTileImage = new Image(
-												"file:" + workToTileAsset
-														+ relativeSelectedTile);
-									} catch (IllegalArgumentException e) {
-										System.out.println(
-												"Tile file not found or something...");
-										System.exit(0);
-									}
-								}
+				selectImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
+					@Override
+					public void handle(MouseEvent event) {
+						if (event.getButton() == MouseButton.PRIMARY) {
+							int id = Integer.parseInt(selectImageView.getId());
+							selectedTile = tileArtDirList[id].toString();
+							relativeSelectedTile = new File(tileAssetDir).toURI().relativize(tileArtDirList[id].toURI()).getPath();
+							try {
+								selectedTileImage = new Image("file:" + workToTileAsset + relativeSelectedTile);
+							} catch (IllegalArgumentException e) {
+								System.out.println("Tile file not found or something...");
+								System.exit(0);
 							}
-						});
+						}
+					}
+				});
 			}
 		}
 	}
@@ -324,14 +271,12 @@ public class MapGUI extends Application {
 		for (File child : objectArtDirList) {
 			childCount += 1;
 			String objectArtPath = child.toString();
-			String relativePath = new File(objectAssetDir).toURI()
-					.relativize(child.toURI()).getPath();
+			String relativePath = new File(objectAssetDir).toURI().relativize(child.toURI()).getPath();
 			if (relativePath.contains(searchString)) {
 
 				Image objectArtImage = null;
 				try {
-					objectArtImage = new Image(
-							"file:" + workToObjectAsset + relativePath);
+					objectArtImage = new Image("file:" + workToObjectAsset + relativePath);
 				} catch (IllegalArgumentException e) {
 					System.out.println("Object file not found or something...");
 					System.exit(0);
@@ -346,34 +291,22 @@ public class MapGUI extends Application {
 
 				// On mouse click of asset tiles
 				selectImageView.setId(Integer.toString(childCount - 1));
-				selectImageView
-						.setOnMouseClicked(new EventHandler<MouseEvent>() {
-							@Override
-							public void handle(MouseEvent event) {
-								if (event.getButton() == MouseButton.PRIMARY) {
-									int id = Integer
-											.parseInt(selectImageView.getId());
-									selectedObject = objectArtDirList[id]
-											.toString();
-									relativeSelectedObject = new File(
-											objectAssetDir)
-													.toURI()
-													.relativize(
-															objectArtDirList[id]
-																	.toURI())
-													.getPath();
-									try {
-										selectedObjectImage = new Image("file:"
-												+ workToObjectAsset
-												+ relativeSelectedObject);
-									} catch (IllegalArgumentException e) {
-										System.out.println(
-												"Object file not found or something...");
-										System.exit(0);
-									}
-								}
+				selectImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
+					@Override
+					public void handle(MouseEvent event) {
+						if (event.getButton() == MouseButton.PRIMARY) {
+							int id = Integer.parseInt(selectImageView.getId());
+							selectedObject = objectArtDirList[id].toString();
+							relativeSelectedObject = new File(objectAssetDir).toURI().relativize(objectArtDirList[id].toURI()).getPath();
+							try {
+								selectedObjectImage = new Image("file:" + workToObjectAsset + relativeSelectedObject);
+							} catch (IllegalArgumentException e) {
+								System.out.println("Object file not found or something...");
+								System.exit(0);
 							}
-						});
+						}
+					}
+				});
 			}
 		}
 	}
@@ -386,10 +319,8 @@ public class MapGUI extends Application {
 		newMapDialog.setTitle("Create New Map");
 		newMapDialog.setHeaderText(null);
 
-		ButtonType okButtonType = new ButtonType("OK",
-				ButtonBar.ButtonData.OK_DONE);
-		newMapDialog.getDialogPane().getButtonTypes().addAll(okButtonType,
-				ButtonType.CANCEL);
+		ButtonType okButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
+		newMapDialog.getDialogPane().getButtonTypes().addAll(okButtonType, ButtonType.CANCEL);
 
 		GridPane newGrid = new GridPane();
 		newGrid.setHgap(10);
@@ -412,8 +343,7 @@ public class MapGUI extends Application {
 		FileChooser defTileChooser = new FileChooser();
 		defTileChooser.setTitle("Choose default tile");
 		defTileChooser.setInitialDirectory(new File(tileAssetDir));
-		FileChooser.ExtensionFilter imgFilter = new FileChooser.ExtensionFilter(
-				"Images (*.png, *.jpg)", "*.png", "*.jpg");
+		FileChooser.ExtensionFilter imgFilter = new FileChooser.ExtensionFilter("Images (*.png, *.jpg)", "*.png", "*.jpg");
 		defTileChooser.getExtensionFilters().add(imgFilter);
 
 		Button defTileChooserBtn = new Button("Open");
@@ -423,8 +353,7 @@ public class MapGUI extends Application {
 				File defTileFile = defTileChooser.showOpenDialog(primaryStage);
 				if (defTileFile != null) {
 					// Convert absolute image location to relative location
-					String relativePath = new File(tileAssetDir).toURI()
-							.relativize(defTileFile.toURI()).getPath();
+					String relativePath = new File(tileAssetDir).toURI().relativize(defTileFile.toURI()).getPath();
 
 					defTileText.setText(relativePath);
 				}
@@ -455,8 +384,7 @@ public class MapGUI extends Application {
 		FileChooser openMapChooser = new FileChooser();
 		openMapChooser.setTitle("Open Map");
 		openMapChooser.setInitialDirectory(new File(workingDir));
-		FileChooser.ExtensionFilter txtFilter = new FileChooser.ExtensionFilter(
-				"TXT files (*.txt)", "*.txt");
+		FileChooser.ExtensionFilter txtFilter = new FileChooser.ExtensionFilter("TXT files (*.txt)", "*.txt");
 		openMapChooser.getExtensionFilters().add(txtFilter);
 
 		//////////////////////
@@ -492,11 +420,9 @@ public class MapGUI extends Application {
 					// Get image and fill grid with default tile
 					Image defTileImage = null;
 					try {
-						defTileImage = new Image(
-								"file:" + workToTileAsset + defTilePath);
+						defTileImage = new Image("file:" + workToTileAsset + defTilePath);
 					} catch (IllegalArgumentException e) {
-						System.out.println(
-								"Default tile file not found or file out of map-maker directory");
+						System.out.println("Default tile file not found or file out of map-maker directory");
 						System.exit(0);
 					}
 					tileNames.clear();
@@ -510,24 +436,18 @@ public class MapGUI extends Application {
 							tileGrid.add(tileImageView, j, i);
 
 							// On mouse click of grid tiles
-							tileImageView.setId(Integer.toString(i) + ":"
-									+ Integer.toString(j));
-							tileImageView.setOnMouseClicked(
-									new EventHandler<MouseEvent>() {
+							tileImageView.setId(Integer.toString(i) + ":" + Integer.toString(j));
+							tileImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
 								@Override
 								public void handle(MouseEvent event) {
-									if (event
-											.getButton() == MouseButton.PRIMARY) {
-										String idNumbers[] = tileImageView
-												.getId().split(":");
+									if (event.getButton() == MouseButton.PRIMARY) {
+										String idNumbers[] = tileImageView.getId().split(":");
 										int x = Integer.parseInt(idNumbers[0]);
 										int y = Integer.parseInt(idNumbers[1]);
 
 										if (selectedTileImage != null) {
-											idGrid[y][x] = convertNameToID(
-													relativeSelectedTile);
-											tileImageView.setImage(
-													selectedTileImage);
+											idGrid[y][x] = convertNameToID(relativeSelectedTile);
+											tileImageView.setImage(selectedTileImage);
 										}
 									}
 								}
@@ -588,12 +508,9 @@ public class MapGUI extends Application {
 
 								Image inpTileImage = null;
 								try {
-									inpTileImage = new Image("file:"
-											+ workToTileAsset
-											+ tileNames.get(idGrid[j][i]));
+									inpTileImage = new Image("file:" + workToTileAsset + tileNames.get(idGrid[j][i]));
 								} catch (IllegalArgumentException e) {
-									System.out.println(
-											"tile file not found or file out of map-maker directory");
+									System.out.println("tile file not found or file out of map-maker directory");
 									System.exit(0);
 								}
 
@@ -602,22 +519,17 @@ public class MapGUI extends Application {
 								tileGrid.add(tileImageView, j, i);
 
 								// On mouse click of grid tiles
-								tileImageView.setId(Integer.toString(i) + ":"
-										+ Integer.toString(j));
-								tileImageView.setOnMouseClicked(
-										new EventHandler<MouseEvent>() {
+								tileImageView.setId(Integer.toString(i) + ":" + Integer.toString(j));
+								tileImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
 									@Override
 									public void handle(MouseEvent event) {
-										String idNumbers[] = tileImageView
-												.getId().split(":");
+										String idNumbers[] = tileImageView.getId().split(":");
 										int x = Integer.parseInt(idNumbers[0]);
 										int y = Integer.parseInt(idNumbers[1]);
 
 										if (selectedTileImage != null) {
-											idGrid[y][x] = convertNameToID(
-													relativeSelectedTile);
-											tileImageView.setImage(
-													selectedTileImage);
+											idGrid[y][x] = convertNameToID(relativeSelectedTile);
+											tileImageView.setImage(selectedTileImage);
 										}
 									}
 								});
@@ -641,22 +553,19 @@ public class MapGUI extends Application {
 				File saveMapFile = saveMapChooser.showSaveDialog(primaryStage);
 				if (saveMapFile != null) {
 					try {
-						PrintWriter saveWriter = new PrintWriter(
-								saveMapFile.toString(), "UTF-8");
+						PrintWriter saveWriter = new PrintWriter(saveMapFile.toString(), "UTF-8");
 						saveWriter.println(tileRows);
 						saveWriter.println(tileCols);
 						for (int i = 0; i < tileRows; i++) {
 							String rowStr = "";
 							for (int j = 0; j < tileCols; j++) {
-								rowStr = rowStr
-										+ convertIDintToStr(idGrid[j][i]) + " ";
+								rowStr = rowStr + convertIDintToStr(idGrid[j][i]) + " ";
 							}
 							saveWriter.println(rowStr);
 						}
 						int numTileNames = tileNames.size();
 						for (int i = 0; i < numTileNames; i++) {
-							String keyStr = tileNames.get(i) + ":"
-									+ convertIDintToStr(i);
+							String keyStr = tileNames.get(i) + ":" + convertIDintToStr(i);
 							saveWriter.println(keyStr);
 						}
 						saveWriter.close();
@@ -679,11 +588,9 @@ public class MapGUI extends Application {
 		MenuItem tileBtn = new MenuItem("Tiles");
 		tileBtn.setOnAction(new EventHandler<ActionEvent>() {
 			public void handle(ActionEvent t) {
-				ObservableList<Node> children = FXCollections
-						.observableArrayList(tilePane.getChildren());
+				ObservableList<Node> children = FXCollections.observableArrayList(tilePane.getChildren());
 				if (children.size() > 1) {
-					if (!children.get(children.size() - 1).getId()
-							.equals("grid")) {
+					if (!children.get(children.size() - 1).getId().equals("grid")) {
 						// Switch to tiles
 						Collections.swap(children, 0, children.size() - 1);
 						tilePane.getChildren().setAll(children);
@@ -696,11 +603,9 @@ public class MapGUI extends Application {
 		MenuItem objBtn = new MenuItem("Objects");
 		objBtn.setOnAction(new EventHandler<ActionEvent>() {
 			public void handle(ActionEvent t) {
-				ObservableList<Node> children = FXCollections
-						.observableArrayList(tilePane.getChildren());
+				ObservableList<Node> children = FXCollections.observableArrayList(tilePane.getChildren());
 				if (children.size() > 1) {
-					if (children.get(children.size() - 1).getId()
-							.equals("grid")) {
+					if (children.get(children.size() - 1).getId().equals("grid")) {
 						// Switch to objects
 						Collections.swap(children, 0, children.size() - 1);
 						tilePane.getChildren().setAll(children);
@@ -758,9 +663,7 @@ public class MapGUI extends Application {
 			public void handle(KeyEvent event) {
 				searchString = tileSearchBox.getText();
 				if (tilePane.getChildren().size() > 1) {
-					if (tilePane.getChildren()
-							.get(tilePane.getChildren().size() - 1)
-							.getId() == "grid") {
+					if (tilePane.getChildren().get(tilePane.getChildren().size() - 1).getId() == "grid") {
 						drawSelectionTiles();
 					} else {
 						drawSelectionObjects();
@@ -779,8 +682,7 @@ public class MapGUI extends Application {
 		menuBar.getMenus().addAll(menuFile, menuEdit);
 
 		// Add elements to scene
-		((VBox) primaryScene.getRoot()).getChildren().addAll(menuBar,
-				tileScrollPane, selectScrollPane, tileSearchBox);
+		((VBox) primaryScene.getRoot()).getChildren().addAll(menuBar, tileScrollPane, selectScrollPane, tileSearchBox);
 
 		// Show GUI
 		primaryStage.setScene(primaryScene);
