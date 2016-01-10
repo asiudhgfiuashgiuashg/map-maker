@@ -33,11 +33,16 @@ import javafx.collections.FXCollections;
 import javafx.beans.value.ChangeListener;
 import javafx.beans.value.ObservableValue;
 import java.util.List;
+import java.util.Arrays;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Optional;
 import java.util.Scanner;
 import java.util.NoSuchElementException;
+
+import org.json.simple.JSONObject;
+import org.json.simple.JSONValue;
+import org.json.simple.JSONArray;
 
 public class MapGUI extends Application {
 	public static void main(String[] args) {
@@ -75,8 +80,7 @@ public class MapGUI extends Application {
 	
 	private String searchString = "";
 		
-	private List<String> tileNames = new ArrayList<String>();
-	private int[][] idGrid;
+	private String[][] idGrid;
 	private Canvas tileCanvas;
 	private GraphicsContext gc;
 
@@ -88,22 +92,7 @@ public class MapGUI extends Application {
 	// Add horizontal slider for tiles
 	final ScrollPane selectScrollPane = new ScrollPane();
 	final GridPane selectGridPane = new GridPane();
-
-	private int convertNameToID(String tileName) {
-		int numTileNames = tileNames.size();
-		for (int i = 0; i < numTileNames; i++) {
-			if (tileNames.get(i).equals(tileName)) {
-				return i;
-			}
-		}
-		tileNames.add(tileName);
-		return numTileNames;
-	}
-
-	private String convertIDintToStr(int id) {
-		return String.format("%03d", id);
-	}
-
+	
 	private void initCanvas() {
 		tilePane.getChildren().clear();
 
@@ -469,12 +458,10 @@ public class MapGUI extends Application {
 						System.out.println("Default tile file not found or file out of map-maker directory");
 						System.exit(0);
 					}
-					tileNames.clear();
-					tileNames.add(defTilePath);
-					idGrid = new int[tileCols][tileRows];
+					idGrid = new String[tileCols][tileRows];
 					for (int i = 0; i < tileRows; i++) {
 						for (int j = 0; j < tileCols; j++) {
-							idGrid[j][i] = convertNameToID(defTilePath);
+							idGrid[j][i] = defTilePath;
 							ImageView tileImageView = new ImageView();
 							tileImageView.setImage(defTileImage);
 							tileGrid.add(tileImageView, j, i);
@@ -490,7 +477,7 @@ public class MapGUI extends Application {
 										int y = Integer.parseInt(idNumbers[1]);
 
 										if (selectedTileImage != null) {
-											idGrid[y][x] = convertNameToID(relativeSelectedTile);
+											idGrid[y][x] = relativeSelectedTile;
 											tileImageView.setImage(selectedTileImage);
 										}
 									}
@@ -512,47 +499,35 @@ public class MapGUI extends Application {
 				// load in tiles
 				File openMapFile = openMapChooser.showOpenDialog(primaryStage);
 				if (openMapFile != null) {
-					tileNames.clear();
 					tileGrid.getChildren().clear();
 					try {
 						Scanner mapFileScanner = new Scanner(openMapFile);
-						tileRows = Integer.parseInt(mapFileScanner.nextLine());
-						tileCols = Integer.parseInt(mapFileScanner.nextLine());
-
+						
+						// Import tiles
+						Object jsonTileLine = JSONValue.parse(mapFileScanner.nextLine());
+						JSONArray jsonTileArray = (JSONArray) jsonTileLine;
+						tileRows = jsonTileArray.size();
+						tileCols = ((JSONArray) jsonTileArray.get(0)).size();
+						idGrid = new String[tileCols][tileRows];
+												
+						for (int i=0; i<tileRows; i++) {
+							JSONArray rowArray = (JSONArray) jsonTileArray.get(i);
+							for (int j=0; j<tileCols; j++) {
+								idGrid[j][i] = rowArray.get(j).toString();
+							}
+						}
+						
 						// Create canvas of grid size
 						initCanvas();
 						drawSelectionTiles();
 
-						idGrid = new int[tileCols][tileRows];
-						for (int i = 0; i < tileRows; i++) {
-							String readRow = mapFileScanner.nextLine();
-							String splitIDs[] = readRow.split(" ");
-
-							// First extract the idGrid data
-							for (int j = 0; j < tileCols; j++) {
-								idGrid[j][i] = Integer.parseInt(splitIDs[j]);
-							}
-						}
-						// Now extract the tileNames data
-						String kRow = mapFileScanner.nextLine();
-						if (kRow != null) {
-							while (kRow != null) {
-								String kSplit[] = kRow.split(":");
-								tileNames.add(kSplit[0]);
-								try {
-									kRow = mapFileScanner.nextLine();
-								} catch (NoSuchElementException e) {
-									kRow = null;
-								}
-							}
-						}
-						// Now fill in grid
+						// Now fill in grid with tiles
 						for (int i = 0; i < tileRows; i++) {
 							for (int j = 0; j < tileCols; j++) {
 
 								Image inpTileImage = null;
 								try {
-									inpTileImage = new Image("file:" + workToTileAsset + tileNames.get(idGrid[j][i]));
+									inpTileImage = new Image("file:" + workToTileAsset + idGrid[j][i]);
 								} catch (IllegalArgumentException e) {
 									System.out.println("tile file not found or file out of map-maker directory");
 									System.exit(0);
@@ -572,14 +547,23 @@ public class MapGUI extends Application {
 										int y = Integer.parseInt(idNumbers[1]);
 
 										if (selectedTileImage != null) {
-											idGrid[y][x] = convertNameToID(relativeSelectedTile);
+											idGrid[y][x] = relativeSelectedTile;
 											tileImageView.setImage(selectedTileImage);
 										}
 									}
 								});
 							}
 						}
-
+						
+						// Import objects
+						Object jsonObjLine = JSONValue.parse(mapFileScanner.nextLine());
+						JSONArray jsonObjArray = (JSONArray) jsonObjLine;
+						for (int i=0; i<jsonObjArray.size(); i++) {
+							System.out.println(jsonObjArray.get(i));
+							// CREATE THE OBJECT CANVASES AND GIVE ID'S
+							
+						}
+						
 					} catch (FileNotFoundException e) {
 						System.out.println("File not found");
 						System.exit(0);
@@ -598,20 +582,31 @@ public class MapGUI extends Application {
 				if (saveMapFile != null) {
 					try {
 						PrintWriter saveWriter = new PrintWriter(saveMapFile.toString(), "UTF-8");
-						saveWriter.println(tileRows);
-						saveWriter.println(tileCols);
-						for (int i = 0; i < tileRows; i++) {
-							String rowStr = "";
-							for (int j = 0; j < tileCols; j++) {
-								rowStr = rowStr + convertIDintToStr(idGrid[j][i]) + " ";
+						
+						// Write tiles in JSON format as a list of lists of tilenames
+						List<List<String>> idGridRows = new ArrayList<List<String>>();
+						int m = tileRows;
+						int n = tileCols;
+						for(int i=0; i<m; i++) {
+							List<String> rowList = new ArrayList<String>();
+							for(int j=0; j<n; j++) {
+						        rowList.add(idGrid[j][i]);
 							}
-							saveWriter.println(rowStr);
+							idGridRows.add(rowList);
 						}
-						int numTileNames = tileNames.size();
-						for (int i = 0; i < numTileNames; i++) {
-							String keyStr = tileNames.get(i) + ":" + convertIDintToStr(i);
-							saveWriter.println(keyStr);
+						String jsonGrid = JSONValue.toJSONString(idGridRows);
+						saveWriter.println(jsonGrid);
+						
+						// Write objects in JSON format as a list of object id's
+						List<String> objList = new ArrayList<String>();
+						for (Node obj : tilePane.getChildren()) {
+							if (!obj.getId().equals("canvas") && !obj.getId().equals("grid")) {
+								objList.add(obj.getId());
+							}
 						}
+						String jsonObjects = JSONValue.toJSONString(objList);
+						saveWriter.println(jsonObjects);
+						
 						saveWriter.close();
 					} catch (FileNotFoundException e) {
 						System.out.println("File not found");
