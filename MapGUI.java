@@ -30,6 +30,8 @@ import javafx.stage.FileChooser;
 import javafx.stage.Stage;
 import javafx.collections.ObservableList;
 import javafx.collections.FXCollections;
+import javafx.beans.value.ChangeListener;
+import javafx.beans.value.ObservableValue;
 import java.util.List;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -55,6 +57,7 @@ public class MapGUI extends Application {
 	private int tileVisLayer = 1;
 	private int playerVisLayer = 5;
 	private int defVisLayer = 9;
+	private Boolean defCollision = true;
 	
 	private String defTilePath;
 	private String workingDir = System.getProperty("user.dir");
@@ -119,9 +122,8 @@ public class MapGUI extends Application {
 						Canvas imgCanvas = new Canvas(selectedObjectImage.getWidth(), selectedObjectImage.getHeight());
 						imgCanvas.getGraphicsContext2D().drawImage(selectedObjectImage, 0, 0);
 
-						// Set id of each object (canvas) to its file name and
-						// coordinates
-						imgCanvas.setId(relativeSelectedObject + "," + event.getX() + "," + event.getY() + "," + defVisLayer);
+						// Set id of each object (canvas) to its file name and coordinates
+						imgCanvas.setId(relativeSelectedObject + "," + event.getX() + "," + event.getY() + "," + defVisLayer + "," + defCollision);
 
 						imgCanvas.setTranslateX(event.getX() - selectedObjectImage.getWidth() / 2);
 						imgCanvas.setTranslateY(event.getY() - selectedObjectImage.getWidth() / 2);
@@ -159,12 +161,14 @@ public class MapGUI extends Application {
 									if (event.getClickCount() == 2) {
 										Dialog<String> editDialog = new Dialog<>();
 										editDialog.setTitle("Edit Object Properties");
-										editDialog.setHeaderText("Visibility Layers: Invisible = 0, Tiles = " + tileVisLayer + ", Player = " + playerVisLayer + ", Default = " + defVisLayer);
+										editDialog.setHeaderText("Visibility Layers:\nInvisible = 0, Tiles = " + tileVisLayer + ", Player = " + playerVisLayer + ", Default = " + defVisLayer);
 
 										ButtonType okButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
 										editDialog.getDialogPane().getButtonTypes().addAll(okButtonType, ButtonType.CANCEL);
 										
 										Label layerLabel = new Label("Visibility Layer:");
+										Label collLabel = new Label("Collisions:");
+										Label additLabel = new Label("Additional Properties:");
 
 										// Get current visibility layer
 										String curVisLayer = imgCanvas.getId().split(",")[3];
@@ -193,10 +197,25 @@ public class MapGUI extends Application {
 											}
 										});
 
+										// Collision choice box
+										ChoiceBox<String> collChoiceBox = new ChoiceBox<String>();
+										collChoiceBox.getItems().addAll("true", "false");
+										if (imgCanvas.getId().split(",")[4].equals("true")) {
+											collChoiceBox.getSelectionModel().selectFirst();
+										} else {
+											collChoiceBox.getSelectionModel().selectLast();
+										}
+										
+										
+										// Grid pane for dialog box
 										GridPane propGridPane = new GridPane();
+										propGridPane.setHgap(10);
+										propGridPane.setVgap(10);
 										propGridPane.add(layerLabel, 0, 0);
 										propGridPane.add(layerTextField, 1, 0);
-
+										propGridPane.add(collLabel, 0, 1);
+										propGridPane.add(collChoiceBox, 1, 1);
+										
 										editDialog.setResultConverter(dialogButton -> {
 											if (dialogButton == okButtonType) {
 												String[] idString = imgCanvas.getId().split(",");
@@ -204,6 +223,7 @@ public class MapGUI extends Application {
 												// Make sure the text field isn't player, tile layer, or null
 												if (!(layerTextField.getText().equals(Integer.toString(playerVisLayer)) || layerTextField.getText().equals(Integer.toString(tileVisLayer)) || layerTextField.getText().equals(""))) {
 													idString[3] = layerTextField.getText();
+													idString[4] = collChoiceBox.getSelectionModel().getSelectedItem();
 												}
 												imgCanvas.setId(String.join(",", idString));
 												System.out.println(imgCanvas.getId());
