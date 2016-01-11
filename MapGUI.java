@@ -344,6 +344,46 @@ public class MapGUI extends Application {
 		}
 	}
 
+	private void fillTileGrid() {
+		// Create canvas of grid size
+		initCanvas();
+		drawSelectionTiles();
+
+		// Now fill in grid with tiles
+		for (int i = 0; i < tileRows; i++) {
+			for (int j = 0; j < tileCols; j++) {
+
+				Image inpTileImage = null;
+				try {
+					inpTileImage = new Image("file:" + workToTileAsset + idGrid[j][i]);
+				} catch (IllegalArgumentException e) {
+					System.out.println("tile file not found or file out of map-maker directory");
+					System.exit(0);
+				}
+
+				ImageView tileImageView = new ImageView();
+				tileImageView.setImage(inpTileImage);
+				tileGrid.add(tileImageView, j, i);
+
+				// On mouse click of grid tiles
+				tileImageView.setId(Integer.toString(i) + ":" + Integer.toString(j));
+				tileImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
+					@Override
+					public void handle(MouseEvent event) {
+						String idNumbers[] = tileImageView.getId().split(":");
+						int x = Integer.parseInt(idNumbers[0]);
+						int y = Integer.parseInt(idNumbers[1]);
+
+						if (selectedTileImage != null) {
+							idGrid[y][x] = relativeSelectedTile;
+							tileImageView.setImage(selectedTileImage);
+						}
+					}
+				});
+			}
+		}
+	}
+	
 	private void createFileMenu(Stage primaryStage, Menu menuFile) {
 		//////////////////////
 		// New - dialog box //
@@ -440,52 +480,21 @@ public class MapGUI extends Application {
 				if (newMapResult.isPresent()) {
 					// Clear grid
 					tileGrid.getChildren().clear();
-
+					
 					// Get inputs from the create map dialog box
 					tileRows = Integer.parseInt(newMapResult.get()[0]);
 					tileCols = Integer.parseInt(newMapResult.get()[1]);
 					defTilePath = newMapResult.get()[2];
-
-					// Create canvas of grid size
-					initCanvas();
-					drawSelectionTiles();
-
-					// Get image and fill grid with default tile
-					Image defTileImage = null;
-					try {
-						defTileImage = new Image("file:" + workToTileAsset + defTilePath);
-					} catch (IllegalArgumentException e) {
-						System.out.println("Default tile file not found or file out of map-maker directory");
-						System.exit(0);
-					}
+					
+					// Reset idGrid
 					idGrid = new String[tileCols][tileRows];
-					for (int i = 0; i < tileRows; i++) {
-						for (int j = 0; j < tileCols; j++) {
-							idGrid[j][i] = defTilePath;
-							ImageView tileImageView = new ImageView();
-							tileImageView.setImage(defTileImage);
-							tileGrid.add(tileImageView, j, i);
-
-							// On mouse click of grid tiles
-							tileImageView.setId(Integer.toString(i) + ":" + Integer.toString(j));
-							tileImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
-								@Override
-								public void handle(MouseEvent event) {
-									if (event.getButton() == MouseButton.PRIMARY) {
-										String idNumbers[] = tileImageView.getId().split(":");
-										int x = Integer.parseInt(idNumbers[0]);
-										int y = Integer.parseInt(idNumbers[1]);
-
-										if (selectedTileImage != null) {
-											idGrid[y][x] = relativeSelectedTile;
-											tileImageView.setImage(selectedTileImage);
-										}
-									}
-								}
-							});
-
-						}
+					
+					// Fill idGrid with default tile
+					for (String[] row : idGrid) {
+						Arrays.fill(row, defTilePath);
 					}
+						
+					fillTileGrid();
 				}
 			}
 		});
@@ -517,43 +526,7 @@ public class MapGUI extends Application {
 							}
 						}
 						
-						// Create canvas of grid size
-						initCanvas();
-						drawSelectionTiles();
-
-						// Now fill in grid with tiles
-						for (int i = 0; i < tileRows; i++) {
-							for (int j = 0; j < tileCols; j++) {
-
-								Image inpTileImage = null;
-								try {
-									inpTileImage = new Image("file:" + workToTileAsset + idGrid[j][i]);
-								} catch (IllegalArgumentException e) {
-									System.out.println("tile file not found or file out of map-maker directory");
-									System.exit(0);
-								}
-
-								ImageView tileImageView = new ImageView();
-								tileImageView.setImage(inpTileImage);
-								tileGrid.add(tileImageView, j, i);
-
-								// On mouse click of grid tiles
-								tileImageView.setId(Integer.toString(i) + ":" + Integer.toString(j));
-								tileImageView.setOnMouseClicked(new EventHandler<MouseEvent>() {
-									@Override
-									public void handle(MouseEvent event) {
-										String idNumbers[] = tileImageView.getId().split(":");
-										int x = Integer.parseInt(idNumbers[0]);
-										int y = Integer.parseInt(idNumbers[1]);
-
-										if (selectedTileImage != null) {
-											idGrid[y][x] = relativeSelectedTile;
-											tileImageView.setImage(selectedTileImage);
-										}
-									}
-								});
-							}
-						}
+						fillTileGrid();
 						
 						// Import objects
 						Object jsonObjLine = JSONValue.parse(mapFileScanner.nextLine());
