@@ -53,33 +53,33 @@ public class MapGUI extends Application {
 	private int tileSizeY;
 	private int tileCols;
 	private int tileRows;
-	
+
 	private int windowWidth = 800;
 	private int windowHeight = 600;
 	private int propWidth = 400;
 	private int propHeight = 250;
-	
+
 	private int tileVisLayer = 1;
 	private int playerVisLayer = 5;
 	private int defVisLayer = 9;
 	private Boolean defCollision = true;
-	
+
 	private String defTilePath;
 	private String workingDir = System.getProperty("user.dir");
 	private String workToTileAsset = "../tile-game/core/assets/tileart/";
 	private String workToObjectAsset = "../tile-game/core/assets/objectart/";
 	private String tileAssetDir = workingDir + "/" + workToTileAsset;
 	private String objectAssetDir = workingDir + "/" + workToObjectAsset;
-	
+
 	private String selectedTile;
 	private String relativeSelectedTile;
 	private String selectedObject;
 	private String relativeSelectedObject;
 	private Image selectedTileImage;
 	private Image selectedObjectImage;
-	
+
 	private String searchString = "";
-		
+
 	private String[][] idGrid;
 	private Canvas tileCanvas;
 	private GraphicsContext gc;
@@ -92,7 +92,7 @@ public class MapGUI extends Application {
 	// Add horizontal slider for tiles
 	final ScrollPane selectScrollPane = new ScrollPane();
 	final GridPane selectGridPane = new GridPane();
-	
+
 	private void initCanvas() {
 		tilePane.getChildren().clear();
 
@@ -108,124 +108,8 @@ public class MapGUI extends Application {
 			public void handle(MouseEvent event) {
 				if (event.getButton() == MouseButton.PRIMARY) {
 					if (selectedObjectImage != null) {
-						Canvas imgCanvas = new Canvas(selectedObjectImage.getWidth(), selectedObjectImage.getHeight());
-						imgCanvas.getGraphicsContext2D().drawImage(selectedObjectImage, 0, 0);
-
-						// Set id of each object (canvas) to its file name and coordinates
-						imgCanvas.setId(relativeSelectedObject + "," + event.getX() + "," + event.getY() + "," + defVisLayer + "," + defCollision);
-
-						imgCanvas.setTranslateX(event.getX() - selectedObjectImage.getWidth() / 2);
-						imgCanvas.setTranslateY(event.getY() - selectedObjectImage.getWidth() / 2);
-
-						tilePane.getChildren().add(imgCanvas);
-
-						// On drag, move object
-						imgCanvas.setOnMouseDragged(new EventHandler<MouseEvent>() {
-							@Override
-							public void handle(MouseEvent event) {
-								if (event.getButton() == MouseButton.PRIMARY) {
-									// Update position
-									double eventXInTilePane = event.getX() + imgCanvas.getTranslateX();
-									double eventYInTilePane = event.getY() + imgCanvas.getTranslateY();
-									imgCanvas.setTranslateX(eventXInTilePane - selectedObjectImage.getWidth() / 2);
-									imgCanvas.setTranslateY(eventYInTilePane - selectedObjectImage.getHeight() / 2);
-
-									// Update position in object's id
-									String[] idString = imgCanvas.getId().split(",");
-									idString[1] = Double.toString(eventXInTilePane);
-									idString[2] = Double.toString(eventYInTilePane);
-									imgCanvas.setId(String.join(",", idString));
-								}
-							}
-						});
-
-						// On right click delete image, on double click edit properties
-						imgCanvas.setOnMouseClicked(new EventHandler<MouseEvent>() {
-							@Override
-							public void handle(MouseEvent event) {
-								if (event.getButton() == MouseButton.SECONDARY) {
-									tilePane.getChildren().remove(imgCanvas);
-								}
-								if (event.getButton() == MouseButton.PRIMARY) {
-									if (event.getClickCount() == 2) {
-										Dialog<String> editDialog = new Dialog<>();
-										editDialog.setTitle("Edit Object Properties");
-										editDialog.setHeaderText("Visibility Layers:\nInvisible = 0, Tiles = " + tileVisLayer + ", Player = " + playerVisLayer + ", Default = " + defVisLayer);
-
-										ButtonType okButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
-										editDialog.getDialogPane().getButtonTypes().addAll(okButtonType, ButtonType.CANCEL);
-										
-										Label layerLabel = new Label("Visibility Layer:");
-										Label collLabel = new Label("Collisions:");
-										Label additLabel = new Label("Additional Properties:");
-
-										// Get current visibility layer
-										String curVisLayer = imgCanvas.getId().split(",")[3];
-										TextField layerTextField = new TextField(curVisLayer);
-
-										// Make sure character is numeric
-										layerTextField.addEventFilter(KeyEvent.KEY_TYPED, new EventHandler<KeyEvent>() {
-											@Override
-											public void handle(KeyEvent e) {
-												if (!Character.isDigit(e.getCharacter().charAt(0))) {
-													e.consume();
-												}
-											}
-										});
-										
-										// Make sure layer is not player, tile layer, or null
-										layerTextField.addEventFilter(KeyEvent.KEY_RELEASED, new EventHandler<KeyEvent>() {
-											@Override
-											public void handle(KeyEvent e) {
-												Node okButton = editDialog.getDialogPane().lookupButton(okButtonType);
-												if (layerTextField.getText().equals(Integer.toString(playerVisLayer)) || layerTextField.getText().equals(Integer.toString(tileVisLayer)) || layerTextField.getText().equals("")) {
-													okButton.setDisable(true);
-												} else {
-													okButton.setDisable(false);
-												}
-											}
-										});
-
-										// Collision choice box
-										ChoiceBox<String> collChoiceBox = new ChoiceBox<String>();
-										collChoiceBox.getItems().addAll("true", "false");
-										if (imgCanvas.getId().split(",")[4].equals("true")) {
-											collChoiceBox.getSelectionModel().selectFirst();
-										} else {
-											collChoiceBox.getSelectionModel().selectLast();
-										}
-										
-										
-										// Grid pane for dialog box
-										GridPane propGridPane = new GridPane();
-										propGridPane.setHgap(10);
-										propGridPane.setVgap(10);
-										propGridPane.add(layerLabel, 0, 0);
-										propGridPane.add(layerTextField, 1, 0);
-										propGridPane.add(collLabel, 0, 1);
-										propGridPane.add(collChoiceBox, 1, 1);
-										
-										editDialog.setResultConverter(dialogButton -> {
-											if (dialogButton == okButtonType) {
-												String[] idString = imgCanvas.getId().split(",");
-
-												// Make sure the text field isn't player, tile layer, or null
-												if (!(layerTextField.getText().equals(Integer.toString(playerVisLayer)) || layerTextField.getText().equals(Integer.toString(tileVisLayer)) || layerTextField.getText().equals(""))) {
-													idString[3] = layerTextField.getText();
-													idString[4] = collChoiceBox.getSelectionModel().getSelectedItem();
-												}
-												imgCanvas.setId(String.join(",", idString));
-												System.out.println(imgCanvas.getId());
-											}
-											return null;
-										});
-										
-										editDialog.getDialogPane().setContent(propGridPane);
-										editDialog.showAndWait();
-									}
-								}
-							}
-						});
+						String objString = relativeSelectedObject + "," + event.getX() + "," + event.getY() + "," + defVisLayer + "," + defCollision;
+						createObject(objString);
 					}
 				}
 			}
@@ -236,6 +120,161 @@ public class MapGUI extends Application {
 		tilePane.getChildren().add(tileGrid);
 		tilePane.getChildren().get(1).setId("grid");
 
+	}
+
+	private void swapTilePaneChildren() {
+		/*
+		 *  Swaps the first and last items in tilePane to 
+		 *  switch between tile and object editing
+		 *  
+		 *  In object edit mode, tilePane children order is
+		 *  grid, canvas, object1, object2, ... objectN
+		 *  so that the objects may be edited and the canvas be 
+		 *  clicked on to add new objects
+		 *  
+		 *  In tile edit mode, grid and objectN are temporarily
+		 *  switched so that the user can edit the tiles
+		 */
+		ObservableList<Node> children = FXCollections.observableArrayList(tilePane.getChildren());
+		if (children.size() > 1) {
+			Collections.swap(children, 0, children.size() - 1);
+			tilePane.getChildren().setAll(children);
+		}
+	}
+
+	private void createObject(String objPropString) {
+
+		String[] objProps = objPropString.split(",");
+		String impObject = objProps[0];
+		Image inpObjectImage = null;
+		try {
+			inpObjectImage = new Image("file:" + workToObjectAsset + impObject);
+		} catch (IllegalArgumentException e) {
+			System.out.println("object file not found or file out of map-maker directory");
+			System.exit(0);
+		}
+		double x = Double.parseDouble(objProps[1]);
+		double y = Double.parseDouble(objProps[2]);
+
+		double imgWidth = inpObjectImage.getWidth();
+		double imgHeight = inpObjectImage.getHeight();
+
+		Canvas imgCanvas = new Canvas(imgWidth, imgHeight);
+		imgCanvas.getGraphicsContext2D().drawImage(inpObjectImage, 0, 0);
+
+		// Set id of each object (canvas) to its file name and coordinates
+		imgCanvas.setId(objPropString);
+
+		imgCanvas.setTranslateX(x - imgWidth / 2);
+		imgCanvas.setTranslateY(y - imgHeight / 2);
+
+		tilePane.getChildren().add(imgCanvas);
+
+		// On drag, move object
+		imgCanvas.setOnMouseDragged(new EventHandler<MouseEvent>() {
+			@Override
+			public void handle(MouseEvent event) {
+				if (event.getButton() == MouseButton.PRIMARY) {
+					// Update position
+					double eventXInTilePane = event.getX() + imgCanvas.getTranslateX();
+					double eventYInTilePane = event.getY() + imgCanvas.getTranslateY();
+					imgCanvas.setTranslateX(eventXInTilePane - imgWidth / 2);
+					imgCanvas.setTranslateY(eventYInTilePane - imgHeight / 2);
+
+					// Update position in object's id
+					String[] idString = imgCanvas.getId().split(",");
+					idString[1] = Double.toString(eventXInTilePane);
+					idString[2] = Double.toString(eventYInTilePane);
+					imgCanvas.setId(String.join(",", idString));
+				}
+			}
+		});
+
+		// On right click delete image, on double click edit properties
+		imgCanvas.setOnMouseClicked(new EventHandler<MouseEvent>() {
+			@Override
+			public void handle(MouseEvent event) {
+				if (event.getButton() == MouseButton.SECONDARY) {
+					tilePane.getChildren().remove(imgCanvas);
+				}
+				if (event.getButton() == MouseButton.PRIMARY) {
+					if (event.getClickCount() == 2) {
+						Dialog<String> editDialog = new Dialog<>();
+						editDialog.setTitle("Edit Object Properties");
+						editDialog.setHeaderText("Visibility Layers:\nInvisible = 0, Tiles = " + tileVisLayer + ", Player = " + playerVisLayer + ", Default = " + defVisLayer);
+
+						ButtonType okButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
+						editDialog.getDialogPane().getButtonTypes().addAll(okButtonType, ButtonType.CANCEL);
+
+						Label layerLabel = new Label("Visibility Layer:");
+						Label collLabel = new Label("Collisions:");
+						Label additLabel = new Label("Additional Properties:");
+
+						// Get current visibility layer
+						String curVisLayer = imgCanvas.getId().split(",")[3];
+						TextField layerTextField = new TextField(curVisLayer);
+
+						// Make sure character is numeric
+						layerTextField.addEventFilter(KeyEvent.KEY_TYPED, new EventHandler<KeyEvent>() {
+							@Override
+							public void handle(KeyEvent e) {
+								if (!Character.isDigit(e.getCharacter().charAt(0))) {
+									e.consume();
+								}
+							}
+						});
+
+						// Make sure layer is not player, tile layer, or null
+						layerTextField.addEventFilter(KeyEvent.KEY_RELEASED, new EventHandler<KeyEvent>() {
+							@Override
+							public void handle(KeyEvent e) {
+								Node okButton = editDialog.getDialogPane().lookupButton(okButtonType);
+								if (layerTextField.getText().equals(Integer.toString(playerVisLayer)) || layerTextField.getText().equals(Integer.toString(tileVisLayer)) || layerTextField.getText().equals("")) {
+									okButton.setDisable(true);
+								} else {
+									okButton.setDisable(false);
+								}
+							}
+						});
+
+						// Collision choice box
+						ChoiceBox<String> collChoiceBox = new ChoiceBox<String>();
+						collChoiceBox.getItems().addAll("true", "false");
+						if (imgCanvas.getId().split(",")[4].equals("true")) {
+							collChoiceBox.getSelectionModel().selectFirst();
+						} else {
+							collChoiceBox.getSelectionModel().selectLast();
+						}
+
+						// Grid pane for dialog box
+						GridPane propGridPane = new GridPane();
+						propGridPane.setHgap(10);
+						propGridPane.setVgap(10);
+						propGridPane.add(layerLabel, 0, 0);
+						propGridPane.add(layerTextField, 1, 0);
+						propGridPane.add(collLabel, 0, 1);
+						propGridPane.add(collChoiceBox, 1, 1);
+
+						editDialog.setResultConverter(dialogButton -> {
+							if (dialogButton == okButtonType) {
+								String[] idString = imgCanvas.getId().split(",");
+
+								// Make sure the text field isn't player, tile layer, or null
+								if (!(layerTextField.getText().equals(Integer.toString(playerVisLayer)) || layerTextField.getText().equals(Integer.toString(tileVisLayer)) || layerTextField.getText().equals(""))) {
+									idString[3] = layerTextField.getText();
+									idString[4] = collChoiceBox.getSelectionModel().getSelectedItem();
+								}
+								imgCanvas.setId(String.join(",", idString));
+							}
+							return null;
+						});
+
+						editDialog.getDialogPane().setContent(propGridPane);
+						editDialog.showAndWait();
+					}
+				}
+			}
+		});
 	}
 
 	private void drawSelectionTiles() {
@@ -383,7 +422,7 @@ public class MapGUI extends Application {
 			}
 		}
 	}
-	
+
 	private void createFileMenu(Stage primaryStage, Menu menuFile) {
 		//////////////////////
 		// New - dialog box //
@@ -480,20 +519,20 @@ public class MapGUI extends Application {
 				if (newMapResult.isPresent()) {
 					// Clear grid
 					tileGrid.getChildren().clear();
-					
+
 					// Get inputs from the create map dialog box
 					tileRows = Integer.parseInt(newMapResult.get()[0]);
 					tileCols = Integer.parseInt(newMapResult.get()[1]);
 					defTilePath = newMapResult.get()[2];
-					
+
 					// Reset idGrid
 					idGrid = new String[tileCols][tileRows];
-					
+
 					// Fill idGrid with default tile
 					for (String[] row : idGrid) {
 						Arrays.fill(row, defTilePath);
 					}
-						
+
 					fillTileGrid();
 				}
 			}
@@ -505,38 +544,47 @@ public class MapGUI extends Application {
 		MenuItem openBtn = new MenuItem("Open");
 		openBtn.setOnAction(new EventHandler<ActionEvent>() {
 			public void handle(ActionEvent t) {
-				// load in tiles
 				File openMapFile = openMapChooser.showOpenDialog(primaryStage);
 				if (openMapFile != null) {
 					tileGrid.getChildren().clear();
 					try {
 						Scanner mapFileScanner = new Scanner(openMapFile);
-						
-						// Import tiles
+
+						//////////////////
+						// Import tiles //
+						//////////////////
+
 						Object jsonTileLine = JSONValue.parse(mapFileScanner.nextLine());
 						JSONArray jsonTileArray = (JSONArray) jsonTileLine;
 						tileRows = jsonTileArray.size();
 						tileCols = ((JSONArray) jsonTileArray.get(0)).size();
 						idGrid = new String[tileCols][tileRows];
-												
-						for (int i=0; i<tileRows; i++) {
+
+						for (int i = 0; i < tileRows; i++) {
 							JSONArray rowArray = (JSONArray) jsonTileArray.get(i);
-							for (int j=0; j<tileCols; j++) {
+							for (int j = 0; j < tileCols; j++) {
 								idGrid[j][i] = rowArray.get(j).toString();
 							}
 						}
-						
+
 						fillTileGrid();
-						
-						// Import objects
+
+						////////////////////
+						// Import objects //
+						////////////////////
+
+						// Temporary change to object editing mode
+						swapTilePaneChildren();
+
 						Object jsonObjLine = JSONValue.parse(mapFileScanner.nextLine());
 						JSONArray jsonObjArray = (JSONArray) jsonObjLine;
-						for (int i=0; i<jsonObjArray.size(); i++) {
-							System.out.println(jsonObjArray.get(i));
-							// CREATE THE OBJECT CANVASES AND GIVE ID'S
-							
+						for (int i = 0; i < jsonObjArray.size(); i++) {
+							createObject((String) jsonObjArray.get(i));
 						}
-						
+
+						// Return back to tile editing mode
+						swapTilePaneChildren();
+
 					} catch (FileNotFoundException e) {
 						System.out.println("File not found");
 						System.exit(0);
@@ -555,21 +603,21 @@ public class MapGUI extends Application {
 				if (saveMapFile != null) {
 					try {
 						PrintWriter saveWriter = new PrintWriter(saveMapFile.toString(), "UTF-8");
-						
+
 						// Write tiles in JSON format as a list of lists of tilenames
 						List<List<String>> idGridRows = new ArrayList<List<String>>();
 						int m = tileRows;
 						int n = tileCols;
-						for(int i=0; i<m; i++) {
+						for (int i = 0; i < m; i++) {
 							List<String> rowList = new ArrayList<String>();
-							for(int j=0; j<n; j++) {
-						        rowList.add(idGrid[j][i]);
+							for (int j = 0; j < n; j++) {
+								rowList.add(idGrid[j][i]);
 							}
 							idGridRows.add(rowList);
 						}
 						String jsonGrid = JSONValue.toJSONString(idGridRows);
 						saveWriter.println(jsonGrid);
-						
+
 						// Write objects in JSON format as a list of object id's
 						List<String> objList = new ArrayList<String>();
 						for (Node obj : tilePane.getChildren()) {
@@ -579,7 +627,7 @@ public class MapGUI extends Application {
 						}
 						String jsonObjects = JSONValue.toJSONString(objList);
 						saveWriter.println(jsonObjects);
-						
+
 						saveWriter.close();
 					} catch (FileNotFoundException e) {
 						System.out.println("File not found");
@@ -597,15 +645,15 @@ public class MapGUI extends Application {
 	}
 
 	private void createEditMenu(Stage primaryStage, Menu menuEdit) {
+		ObservableList<Node> layers = tilePane.getChildren();
+
 		MenuItem tileBtn = new MenuItem("Tiles");
 		tileBtn.setOnAction(new EventHandler<ActionEvent>() {
 			public void handle(ActionEvent t) {
-				ObservableList<Node> children = FXCollections.observableArrayList(tilePane.getChildren());
-				if (children.size() > 1) {
-					if (!children.get(children.size() - 1).getId().equals("grid")) {
+				if (layers.size() > 1) {
+					if (!layers.get(layers.size() - 1).getId().equals("grid")) {
 						// Switch to tiles
-						Collections.swap(children, 0, children.size() - 1);
-						tilePane.getChildren().setAll(children);
+						swapTilePaneChildren();
 						drawSelectionTiles();
 					}
 				}
@@ -615,12 +663,10 @@ public class MapGUI extends Application {
 		MenuItem objBtn = new MenuItem("Objects");
 		objBtn.setOnAction(new EventHandler<ActionEvent>() {
 			public void handle(ActionEvent t) {
-				ObservableList<Node> children = FXCollections.observableArrayList(tilePane.getChildren());
-				if (children.size() > 1) {
-					if (children.get(children.size() - 1).getId().equals("grid")) {
+				if (layers.size() > 1) {
+					if (layers.get(layers.size() - 1).getId().equals("grid")) {
 						// Switch to objects
-						Collections.swap(children, 0, children.size() - 1);
-						tilePane.getChildren().setAll(children);
+						swapTilePaneChildren();
 						drawSelectionObjects();
 					}
 				}
