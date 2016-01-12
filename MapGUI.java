@@ -102,13 +102,13 @@ public class MapGUI extends Application {
 		tilePane.getChildren().add(tileCanvas);
 		tilePane.getChildren().get(0).setId("canvas");
 
-		// Set on mouse click for master canvas
+		// On mouse click of master canvas, create new object
 		tileCanvas.setOnMouseClicked(new EventHandler<MouseEvent>() {
 			@Override
 			public void handle(MouseEvent event) {
 				if (event.getButton() == MouseButton.PRIMARY) {
 					if (selectedObjectImage != null) {
-						String objString = relativeSelectedObject + "," + event.getX() + "," + event.getY() + "," + defVisLayer + "," + defCollision;
+						String objString = relativeSelectedObject + "," + event.getX() + "," + event.getY() + "," + defVisLayer + "," + defCollision + ",";
 						createObject(objString);
 					}
 				}
@@ -144,17 +144,17 @@ public class MapGUI extends Application {
 
 	private void createObject(String objPropString) {
 
-		String[] objProps = objPropString.split(",");
-		String impObject = objProps[0];
+		String[] inpObjProps = objPropString.split(",");
+		String inpObject = inpObjProps[0];
 		Image inpObjectImage = null;
 		try {
-			inpObjectImage = new Image("file:" + workToObjectAsset + impObject);
+			inpObjectImage = new Image("file:" + workToObjectAsset + inpObject);
 		} catch (IllegalArgumentException e) {
 			System.out.println("object file not found or file out of map-maker directory");
 			System.exit(0);
 		}
-		double x = Double.parseDouble(objProps[1]);
-		double y = Double.parseDouble(objProps[2]);
+		double x = Double.parseDouble(inpObjProps[1]);
+		double y = Double.parseDouble(inpObjProps[2]);
 
 		double imgWidth = inpObjectImage.getWidth();
 		double imgHeight = inpObjectImage.getHeight();
@@ -182,26 +182,30 @@ public class MapGUI extends Application {
 					imgCanvas.setTranslateY(eventYInTilePane - imgHeight / 2);
 
 					// Update position in object's id
-					String[] idString = imgCanvas.getId().split(",");
-					idString[1] = Double.toString(eventXInTilePane);
-					idString[2] = Double.toString(eventYInTilePane);
-					imgCanvas.setId(String.join(",", idString));
+					String[] objProps = imgCanvas.getId().split(",");
+					objProps[1] = Double.toString(eventXInTilePane);
+					objProps[2] = Double.toString(eventYInTilePane);
+					imgCanvas.setId(String.join(",", objProps));
 				}
 			}
 		});
-
-		// On right click delete image, on double click edit properties
+		
 		imgCanvas.setOnMouseClicked(new EventHandler<MouseEvent>() {
 			@Override
 			public void handle(MouseEvent event) {
+				String[] objProps = imgCanvas.getId().split(",");
+				
+				// On right click delete image
 				if (event.getButton() == MouseButton.SECONDARY) {
 					tilePane.getChildren().remove(imgCanvas);
 				}
+				
+				// On double click edit properties
 				if (event.getButton() == MouseButton.PRIMARY) {
 					if (event.getClickCount() == 2) {
 						Dialog<String> editDialog = new Dialog<>();
 						editDialog.setTitle("Edit Object Properties");
-						editDialog.setHeaderText("Visibility Layers:\nInvisible = 0, Tiles = " + tileVisLayer + ", Player = " + playerVisLayer + ", Default = " + defVisLayer);
+						editDialog.setHeaderText("Visibility Layers:\nInvisible = 0, Tiles = " + tileVisLayer + ", Player = " + playerVisLayer + ", Default = " + defVisLayer + "\n(Additional properties delimited by comma)");
 
 						ButtonType okButtonType = new ButtonType("OK", ButtonBar.ButtonData.OK_DONE);
 						editDialog.getDialogPane().getButtonTypes().addAll(okButtonType, ButtonType.CANCEL);
@@ -211,7 +215,7 @@ public class MapGUI extends Application {
 						Label additLabel = new Label("Additional Properties:");
 
 						// Get current visibility layer
-						String curVisLayer = imgCanvas.getId().split(",")[3];
+						String curVisLayer = objProps[3];
 						TextField layerTextField = new TextField(curVisLayer);
 
 						// Make sure character is numeric
@@ -240,12 +244,23 @@ public class MapGUI extends Application {
 						// Collision choice box
 						ChoiceBox<String> collChoiceBox = new ChoiceBox<String>();
 						collChoiceBox.getItems().addAll("true", "false");
-						if (imgCanvas.getId().split(",")[4].equals("true")) {
+						if (objProps[4].equals("true")) {
 							collChoiceBox.getSelectionModel().selectFirst();
 						} else {
 							collChoiceBox.getSelectionModel().selectLast();
 						}
 
+						// Addition properties textbox
+						TextField additTextField = new TextField();
+						if (objProps.length > 5) {
+							// Get additional properties and list them in textbox
+							String additPropString = "";
+							for (int i=5; i<objProps.length; i++) {
+								additPropString += (objProps[i] + ",");
+							}
+							additTextField.setText(additPropString);
+						}
+						
 						// Grid pane for dialog box
 						GridPane propGridPane = new GridPane();
 						propGridPane.setHgap(10);
@@ -254,17 +269,28 @@ public class MapGUI extends Application {
 						propGridPane.add(layerTextField, 1, 0);
 						propGridPane.add(collLabel, 0, 1);
 						propGridPane.add(collChoiceBox, 1, 1);
+						propGridPane.add(additLabel, 0, 2);
+						propGridPane.add(additTextField, 1, 2);
 
 						editDialog.setResultConverter(dialogButton -> {
 							if (dialogButton == okButtonType) {
-								String[] idString = imgCanvas.getId().split(",");
-
+								objProps[3] = layerTextField.getText();
+								objProps[4] = collChoiceBox.getSelectionModel().getSelectedItem();
+								
+								// Construct base properties for id
+								String basePropString = "";
+								for (int i=0; i<5; i++) {
+									basePropString += (objProps[i] + ",");
+								}
+								
+								// Now add additional properties to the id
+								String additPropString = additTextField.getText();
+								String propString = basePropString + additPropString;
+																
 								// Make sure the text field isn't player, tile layer, or null
 								if (!(layerTextField.getText().equals(Integer.toString(playerVisLayer)) || layerTextField.getText().equals(Integer.toString(tileVisLayer)) || layerTextField.getText().equals(""))) {
-									idString[3] = layerTextField.getText();
-									idString[4] = collChoiceBox.getSelectionModel().getSelectedItem();
+									imgCanvas.setId(propString);
 								}
-								imgCanvas.setId(String.join(",", idString));
 							}
 							return null;
 						});
