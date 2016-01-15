@@ -105,7 +105,7 @@ public class MapGUI extends Application {
 		public double y;
 		public int visLayer;
 		public Boolean collision;
-		public String[] otherProps;
+		public String[] extraProps;
 
 		// Edit properties window dimensions
 		private final int propWidth = 400;
@@ -127,11 +127,11 @@ public class MapGUI extends Application {
 			this.y = y;
 			this.visLayer = defVisLayer;
 			this.collision = defCollision;
-			this.otherProps = null;
+			this.extraProps = null;
 			CreateObject(this);
 		}
 
-		public CanvasObject(Image objectImage, double imgWidth, double imgHeight, String fileName, double x, double y, int visLayer, Boolean collision, String[] otherProps) {
+		public CanvasObject(Image objectImage, double imgWidth, double imgHeight, String fileName, double x, double y, int visLayer, Boolean collision, String[] extraProps) {
 			super(imgWidth, imgHeight);
 			this.objectImage = objectImage;
 			this.imgWidth = imgWidth;
@@ -141,13 +141,13 @@ public class MapGUI extends Application {
 			this.y = y;
 			this.visLayer = visLayer;
 			this.collision = collision;
-			this.otherProps = otherProps;
+			this.extraProps = extraProps;
 			CreateObject(this);
 		}
 
 		public void CreateObject(CanvasObject thisObj) {
 			// Set Unique Id
-			this.setId(Integer.toString(uidIncrementer));
+			this.setId("object" + uidIncrementer);
 			uidIncrementer++;
 
 			// Draw image
@@ -231,8 +231,8 @@ public class MapGUI extends Application {
 
 							// Addition properties textbox
 							TextField additTextField = new TextField();
-							if (thisObj.otherProps != null) {
-								additTextField.setText(String.join(",", thisObj.otherProps));
+							if (thisObj.extraProps != null) {
+								additTextField.setText(String.join(",", thisObj.extraProps));
 							}
 
 							// Grid pane for dialog box
@@ -253,7 +253,7 @@ public class MapGUI extends Application {
 										// Update properties
 										thisObj.visLayer = Integer.parseInt(layerTextField.getText());
 										thisObj.collision = Boolean.parseBoolean(collChoiceBox.getSelectionModel().getSelectedItem());
-										thisObj.otherProps = additTextField.getText().split(",");
+										thisObj.extraProps = additTextField.getText().split(",");
 									}
 								}
 								return null;
@@ -556,7 +556,16 @@ public class MapGUI extends Application {
 		saveMapChooser.setInitialDirectory(new File(workingDir));
 		saveMapChooser.getExtensionFilters().add(txtFilter);
 
-		// ------------------------//
+		// --------------------------------------------------------------------//
+		
+		/*                                 JSON Hierarchy
+		 * 
+		 *                                  jsonFileObj
+		 *           tiles                                          objects
+		 *        array of rows                          array of properties for each obj
+		 * array of tile names in row              base props                         extra props
+		 *                                  fileName, x, y, visLayer, collision    array of extra props
+		 */
 
 		///////////////////////
 		// New - menu button //
@@ -598,13 +607,14 @@ public class MapGUI extends Application {
 					tileGrid.getChildren().clear();
 					try {
 						Scanner mapFileScanner = new Scanner(openMapFile);
+						Object jsonString = JSONValue.parse(mapFileScanner.nextLine());
+						JSONObject jsonFileObj = (JSONObject) jsonString;
 
 						//////////////////
 						// Import tiles //
 						//////////////////
 
-						Object jsonTileLine = JSONValue.parse(mapFileScanner.nextLine());
-						JSONArray jsonTileArray = (JSONArray) jsonTileLine;
+						JSONArray jsonTileArray = (JSONArray) jsonFileObj.get("tiles");
 						tileRows = jsonTileArray.size();
 						tileCols = ((JSONArray) jsonTileArray.get(0)).size();
 						idGrid = new String[tileCols][tileRows];
@@ -625,24 +635,13 @@ public class MapGUI extends Application {
 						// Temporary change to object editing mode
 						swapTilePaneChildren();
 
-						// Get number of objects
-						int numObjects = 0;
-						try {
-							LineNumberReader lnr = new LineNumberReader(new FileReader(openMapFile));
-							lnr.skip(Long.MAX_VALUE);
-							numObjects = lnr.getLineNumber() - 1;
-							lnr.close();
-						} catch (IOException e) {
-							System.out.println(e);
-							System.exit(0);
-						}
+						JSONArray jsonObjArray = (JSONArray) jsonFileObj.get("objects");
 
 						// Load properties from JSON format
-						for (int i = 0; i < numObjects; i++) {
-							Object jsonObjLine = JSONValue.parse(mapFileScanner.nextLine());
-							JSONArray propList = (JSONArray) jsonObjLine;
-							JSONObject baseProps = (JSONObject) propList.get(0);
-							JSONArray jsonOtherProps = (JSONArray) propList.get(1);
+						for (Object propObj : jsonObjArray) {
+							JSONObject properties = (JSONObject) propObj;
+							JSONObject baseProps = (JSONObject) properties.get("baseProperties");
+							JSONArray jsonExtraProps = (JSONArray) properties.get("extraProperties");
 
 							String fileName = (String) baseProps.get("fileName");
 							double x = (Double) baseProps.get("x");
@@ -650,9 +649,9 @@ public class MapGUI extends Application {
 							int visLayer = ((Long) baseProps.get("visLayer")).intValue();
 							Boolean collision = (Boolean) baseProps.get("collision");
 
-							List<String> otherPropsList = (ArrayList) jsonOtherProps;
-							String[] otherProps = new String[otherPropsList.size()];
-							otherProps = otherPropsList.toArray(otherProps);
+							List<String> extraPropsList = (ArrayList) jsonExtraProps;
+							String[] extraProps = new String[extraPropsList.size()];
+							extraProps = extraPropsList.toArray(extraProps);
 
 							// Create object
 							Image objectImage = null;
@@ -660,7 +659,7 @@ public class MapGUI extends Application {
 								objectImage = new Image("file:" + workToObjectAsset + fileName);
 								double imgWidth = objectImage.getWidth();
 								double imgHeight = objectImage.getHeight();
-								new CanvasObject(objectImage, imgWidth, imgHeight, fileName, x, y, visLayer, collision, otherProps);
+								new CanvasObject(objectImage, imgWidth, imgHeight, fileName, x, y, visLayer, collision, extraProps);
 							} catch (IllegalArgumentException e) {
 								System.out.println("object file not found or file out of map-maker directory");
 								System.exit(0);
@@ -689,6 +688,9 @@ public class MapGUI extends Application {
 					try {
 						PrintWriter saveWriter = new PrintWriter(saveMapFile.toString(), "UTF-8");
 
+						// JSON Object for the entire file
+						JSONObject jsonFileObj = new JSONObject();
+
 						// Write tiles in JSON format as a list of lists of tilenames
 						List<List<String>> idGridRows = new ArrayList<List<String>>();
 						int m = tileRows;
@@ -700,14 +702,17 @@ public class MapGUI extends Application {
 							}
 							idGridRows.add(rowList);
 						}
-						String jsonGrid = JSONValue.toJSONString(idGridRows);
-						saveWriter.println(jsonGrid);
+
+						// Put tiles in FileObj
+						jsonFileObj.put("tiles", idGridRows);
 
 						// Write objects in JSON format
+						JSONArray jsonObjArray = new JSONArray();
 						List<CanvasObject> objList = new ArrayList<CanvasObject>();
 						for (Node obj : tilePane.getChildren()) {
 							if (obj instanceof CanvasObject) {
-								JSONArray propList = new JSONArray();
+								// JSON Object that holds base and extra props
+								JSONObject properties = new JSONObject();
 
 								// First entry: base properties as obj
 								CanvasObject canvasObj = (CanvasObject) obj;
@@ -717,23 +722,27 @@ public class MapGUI extends Application {
 								jsonObj.put("y", canvasObj.y);
 								jsonObj.put("visLayer", canvasObj.visLayer);
 								jsonObj.put("collision", canvasObj.collision);
-								propList.add(jsonObj);
+								properties.put("baseProperties", jsonObj);
 
-								// Second entry: other properties as array
-								JSONArray otherList = new JSONArray();
+								// Second entry: extra properties as array
+								JSONArray extraList = new JSONArray();
 								// NOTE: Couldn't find a method to do this for me
-								if (canvasObj.otherProps != null) {
-									for (String prop : canvasObj.otherProps) {
-										otherList.add(prop);
+								if (canvasObj.extraProps != null) {
+									for (String prop : canvasObj.extraProps) {
+										extraList.add(prop);
 									}
 								}
-								propList.add(otherList);
+								properties.put("extraProperties", extraList);
 
-								// Write to file
-								saveWriter.println(propList);
+								// Add properties object to Object Array
+								jsonObjArray.add(properties);
 							}
 						}
+						// Put array of all property objects into FileObj
+						jsonFileObj.put("objects", jsonObjArray);
 
+						// Write to file
+						saveWriter.println(jsonFileObj.toJSONString());
 						saveWriter.close();
 					} catch (FileNotFoundException e) {
 						System.out.println("File not found");
