@@ -472,6 +472,7 @@ public class MapGUI extends Application {
 		}
 	}
 
+	@SuppressWarnings("unchecked")
 	private void createFileMenu(Stage primaryStage, Menu menuFile) {
 		//////////////////////
 		// New - dialog box //
@@ -557,7 +558,7 @@ public class MapGUI extends Application {
 		saveMapChooser.getExtensionFilters().add(txtFilter);
 
 		// --------------------------------------------------------------------//
-		
+
 		/*                                 JSON Hierarchy
 		 * 
 		 *                                  jsonFileObj
