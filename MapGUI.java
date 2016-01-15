@@ -21,6 +21,7 @@ import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
 import javafx.scene.input.KeyCode;
+import javafx.scene.input.KeyCombination;
 import javafx.scene.input.KeyEvent;
 import javafx.scene.input.MouseButton;
 import javafx.scene.input.MouseEvent;
@@ -501,6 +502,9 @@ public class MapGUI extends Application {
 		defTileText.setWrappingWidth(200);
 		defTileText.setTextAlignment(TextAlignment.JUSTIFY);
 		defTileText.setText("no selection made");
+		
+		// Disable button until tile selection is made
+		newMapDialog.getDialogPane().lookupButton(okButtonType).setDisable(true);
 
 		FileChooser defTileChooser = new FileChooser();
 		defTileChooser.setTitle("Choose default tile");
@@ -517,6 +521,8 @@ public class MapGUI extends Application {
 					// Convert absolute image location to relative location
 					String relativePath = new File(tileAssetDir).toURI().relativize(defTileFile.toURI()).getPath();
 
+					// Re-enable OK button
+					newMapDialog.getDialogPane().lookupButton(okButtonType).setDisable(false);
 					defTileText.setText(relativePath);
 				}
 			}
@@ -572,6 +578,7 @@ public class MapGUI extends Application {
 		// New - menu button //
 		///////////////////////
 		MenuItem newBtn = new MenuItem("New");
+		newBtn.setAccelerator(KeyCombination.keyCombination("Ctrl+N"));
 		newBtn.setOnAction(new EventHandler<ActionEvent>() {
 			public void handle(ActionEvent t) {
 				Optional<String[]> newMapResult = newMapDialog.showAndWait();
@@ -601,6 +608,7 @@ public class MapGUI extends Application {
 		// Open - menu button //
 		////////////////////////
 		MenuItem openBtn = new MenuItem("Open");
+		openBtn.setAccelerator(KeyCombination.keyCombination("Ctrl+O"));
 		openBtn.setOnAction(new EventHandler<ActionEvent>() {
 			public void handle(ActionEvent t) {
 				File openMapFile = openMapChooser.showOpenDialog(primaryStage);
@@ -682,6 +690,7 @@ public class MapGUI extends Application {
 		// Save - menu button //
 		////////////////////////
 		MenuItem saveBtn = new MenuItem("Save");
+		saveBtn.setAccelerator(KeyCombination.keyCombination("Ctrl+S"));
 		saveBtn.setOnAction(new EventHandler<ActionEvent>() {
 			public void handle(ActionEvent t) {
 				File saveMapFile = saveMapChooser.showSaveDialog(primaryStage);
@@ -764,6 +773,7 @@ public class MapGUI extends Application {
 		ObservableList<Node> layers = tilePane.getChildren();
 
 		MenuItem tileBtn = new MenuItem("Tiles");
+		tileBtn.setAccelerator(KeyCombination.keyCombination("Ctrl+1"));
 		tileBtn.setOnAction(new EventHandler<ActionEvent>() {
 			public void handle(ActionEvent t) {
 				if (layers.size() > 1) {
@@ -777,6 +787,7 @@ public class MapGUI extends Application {
 		});
 
 		MenuItem objBtn = new MenuItem("Objects");
+		objBtn.setAccelerator(KeyCombination.keyCombination("Ctrl+2"));
 		objBtn.setOnAction(new EventHandler<ActionEvent>() {
 			public void handle(ActionEvent t) {
 				if (layers.size() > 1) {
@@ -850,7 +861,7 @@ public class MapGUI extends Application {
 		//////////////////////
 		// almost done boiz //
 		//////////////////////
-
+		
 		// Menu Bar
 		MenuBar menuBar = new MenuBar();
 		menuBar.getMenus().addAll(menuFile, menuEdit);
