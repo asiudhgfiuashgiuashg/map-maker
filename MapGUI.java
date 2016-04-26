@@ -716,6 +716,10 @@ public class MapGUI extends Application {
 						// Put tiles in FileObj
 						jsonFileObj.put("tiles", idGridRows);
 
+						// put width and height of map in tile units
+						jsonFileObj.put("width", tileCols);
+						jsonFileObj.put("height", tileRows);
+
 						// Write objects in JSON format
 						JSONArray jsonObjArray = new JSONArray();
 						List<CanvasObject> objList = new ArrayList<CanvasObject>();
