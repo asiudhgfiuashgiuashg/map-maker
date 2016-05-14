@@ -552,7 +552,7 @@ public class MapGUI extends Application {
 		FileChooser openMapChooser = new FileChooser();
 		openMapChooser.setTitle("Open Map");
 		openMapChooser.setInitialDirectory(new File(workingDir));
-		FileChooser.ExtensionFilter txtFilter = new FileChooser.ExtensionFilter("TXT files (*.txt)", "*.txt");
+		FileChooser.ExtensionFilter txtFilter = new FileChooser.ExtensionFilter("JSON files (*.json)", "*.json");
 		openMapChooser.getExtensionFilters().add(txtFilter);
 
 		//////////////////////
