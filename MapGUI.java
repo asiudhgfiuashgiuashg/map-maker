@@ -623,7 +623,10 @@ public class MapGUI extends Application {
 			public void handle(ActionEvent t) {
 				File openMapFile = openMapChooser.showOpenDialog(primaryStage);
 				if (openMapFile != null) {
-					tileGrid.getChildren().clear();
+					if (null != tileGrid) {
+						tileGrid.getChildren().clear();
+					}
+					
 					try {
 						Scanner mapFileScanner = new Scanner(openMapFile);
 						Object jsonString = JSONValue.parse(mapFileScanner.nextLine());
