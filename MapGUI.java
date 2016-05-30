@@ -69,8 +69,8 @@ public class MapGUI extends Application {
 	private String relativeSelectedTile;
 	private String selectedObject;
 	private String relativeSelectedObject;
-	private Image selectedTileImage;
-	private Image selectedObjectImage;
+	private ImageWithURL selectedTileImage;
+	private ImageWithURL selectedObjectImage;
 
 	private String searchString = "";
 
@@ -286,7 +286,7 @@ public class MapGUI extends Application {
 						// Create object Image
 						Image objectImage = null;
 						try {
-							objectImage = new Image("file:" + workToObjectAsset + relativeSelectedObject);
+							objectImage = new ImageWithURL("file:" + workToObjectAsset + relativeSelectedObject);
 							double imgWidth = objectImage.getWidth();
 							double imgHeight = objectImage.getHeight();
 							new CanvasObject(objectImage, imgWidth, imgHeight, relativeSelectedObject, event.getX(), event.getY());
@@ -343,7 +343,7 @@ public class MapGUI extends Application {
 
 				Image tileArtImage = null;
 				try {
-					tileArtImage = new Image("file:" + workToTileAsset + relativePath);
+					tileArtImage = new ImageWithURL("file:" + workToTileAsset + relativePath);
 				} catch (IllegalArgumentException e) {
 					System.out.println("Tile file not found or something...");
 					System.exit(0);
@@ -354,6 +354,7 @@ public class MapGUI extends Application {
 					tileSizeX = (int) tileArtImage.getWidth();
 					tileSizeY = (int) tileArtImage.getHeight();
 				}
+				System.out.println("tileSizeX: " + tileSizeX);
 
 				ImageView selectImageView = new ImageView();
 				selectImageView.setImage(tileArtImage);
@@ -372,7 +373,7 @@ public class MapGUI extends Application {
 							selectedTile = tileArtDirList[id].toString();
 							relativeSelectedTile = new File(tileAssetDir).toURI().relativize(tileArtDirList[id].toURI()).getPath();
 							try {
-								selectedTileImage = new Image("file:" + workToTileAsset + relativeSelectedTile);
+								selectedTileImage = new ImageWithURL("file:" + workToTileAsset + relativeSelectedTile);
 							} catch (IllegalArgumentException e) {
 								System.out.println("Tile file not found or something...");
 								System.exit(0);
@@ -399,7 +400,7 @@ public class MapGUI extends Application {
 
 				Image objectArtImage = null;
 				try {
-					objectArtImage = new Image("file:" + workToObjectAsset + relativePath);
+					objectArtImage = new ImageWithURL("file:" + workToObjectAsset + relativePath);
 				} catch (IllegalArgumentException e) {
 					System.out.println("Object file not found or something...");
 					System.exit(0);
@@ -422,7 +423,7 @@ public class MapGUI extends Application {
 							selectedObject = objectArtDirList[id].toString();
 							relativeSelectedObject = new File(objectAssetDir).toURI().relativize(objectArtDirList[id].toURI()).getPath();
 							try {
-								selectedObjectImage = new Image("file:" + workToObjectAsset + relativeSelectedObject);
+								selectedObjectImage = new ImageWithURL("file:" + workToObjectAsset + relativeSelectedObject);
 							} catch (IllegalArgumentException e) {
 								System.out.println("Object file not found or something...");
 								System.exit(0);
@@ -445,7 +446,7 @@ public class MapGUI extends Application {
 
 				Image inpTileImage = null;
 				try {
-					inpTileImage = new Image("file:" + workToTileAsset + idGrid[j][i], zoomPercent / 100 * tileSizeX, zoomPercent / 100 * tileSizeY, true, false);
+					inpTileImage = new ImageWithURL("file:" + workToTileAsset + idGrid[j][i], zoomPercent / 100 * tileSizeX, zoomPercent / 100 * tileSizeY, true, false, true);
 
 				} catch (IllegalArgumentException e) {
 					System.out.println("tile file not found or file out of map-maker directory");
@@ -469,8 +470,12 @@ public class MapGUI extends Application {
 						int y = Integer.parseInt(idNumbers[1]);
 
 						if (selectedTileImage != null) {
+							//create a tile image scaled on the zoom percentage to place on the grid
+							String selectedTileURL = selectedTileImage.getURL();
+							ImageWithURL zoomedSelectedTileImage = new ImageWithURL(selectedTileURL, zoomPercent / 100 * tileSizeX, zoomPercent / 100 * tileSizeY, true, false, true);
+
 							idGrid[y][x] = relativeSelectedTile;
-							tileImageView.setImage(selectedTileImage);
+							tileImageView.setImage(zoomedSelectedTileImage);
 						}
 					}
 				});
@@ -670,7 +675,7 @@ public class MapGUI extends Application {
 							// Create object
 							Image objectImage = null;
 							try {
-								objectImage = new Image("file:" + workToObjectAsset + fileName);
+								objectImage = new ImageWithURL("file:" + workToObjectAsset + fileName);
 								double imgWidth = objectImage.getWidth();
 								double imgHeight = objectImage.getHeight();
 								new CanvasObject(objectImage, imgWidth, imgHeight, fileName, x, y, visLayer, collision, extraProps);
