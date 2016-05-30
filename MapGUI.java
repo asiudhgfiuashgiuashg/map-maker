@@ -127,7 +127,7 @@ public class MapGUI extends Application {
 			this.visLayer = defVisLayer;
 			this.collision = defCollision;
 			this.extraProps = null;
-			CreateObject(this);
+			CreateObject();
 		}
 
 		public CanvasObject(Image objectImage, double imgWidth, double imgHeight, String fileName, double x, double y, int visLayer, Boolean collision, String[] extraProps) {
@@ -141,42 +141,42 @@ public class MapGUI extends Application {
 			this.visLayer = visLayer;
 			this.collision = collision;
 			this.extraProps = extraProps;
-			CreateObject(this);
+			CreateObject();
 		}
 
-		public void CreateObject(CanvasObject thisObj) {
+		public void CreateObject() {
 			// Set Unique Id
 			this.setId("object" + uidIncrementer);
 			uidIncrementer++;
 
 			// Draw image
 			this.getGraphicsContext2D().drawImage(objectImage, 0, 0);
-			this.setTranslateX(thisObj.x - thisObj.imgWidth / 2);
-			this.setTranslateY(thisObj.y - thisObj.imgHeight / 2);
+			this.setTranslateX(CanvasObject.this.x - CanvasObject.this.imgWidth / 2);
+			this.setTranslateY(CanvasObject.this.y - CanvasObject.this.imgHeight / 2);
 
 			// Add to Pane
-			tilePane.getChildren().add(thisObj);
+			tilePane.getChildren().add(CanvasObject.this);
 
 			// On drag, move object
-			thisObj.setOnMouseDragged(new EventHandler<MouseEvent>() {
+			this.setOnMouseDragged(new EventHandler<MouseEvent>() {
 				@Override
 				public void handle(MouseEvent event) {
 					if (event.getButton() == MouseButton.PRIMARY) {
 						// Update position
-						thisObj.x = event.getX() + thisObj.getTranslateX();
-						thisObj.y = event.getY() + thisObj.getTranslateY();
-						thisObj.setTranslateX(thisObj.x - thisObj.imgWidth / 2);
-						thisObj.setTranslateY(thisObj.y - thisObj.imgHeight / 2);
+						CanvasObject.this.x = event.getX() + CanvasObject.this.getTranslateX();
+						CanvasObject.this.y = event.getY() + CanvasObject.this.getTranslateY();
+						CanvasObject.this.setTranslateX(CanvasObject.this.x - CanvasObject.this.imgWidth / 2);
+						CanvasObject.this.setTranslateY(CanvasObject.this.y - CanvasObject.this.imgHeight / 2);
 					}
 				}
 			});
 
-			thisObj.setOnMouseClicked(new EventHandler<MouseEvent>() {
+			this.setOnMouseClicked(new EventHandler<MouseEvent>() {
 				@Override
 				public void handle(MouseEvent event) {
 					// On right click delete image
 					if (event.getButton() == MouseButton.SECONDARY) {
-						tilePane.getChildren().remove(thisObj);
+						tilePane.getChildren().remove(CanvasObject.this);
 					}
 
 					// On double click edit properties
@@ -230,8 +230,8 @@ public class MapGUI extends Application {
 
 							// Addition properties textbox
 							TextField additTextField = new TextField();
-							if (thisObj.extraProps != null) {
-								additTextField.setText(String.join(",", thisObj.extraProps));
+							if (CanvasObject.this.extraProps != null) {
+								additTextField.setText(String.join(",", CanvasObject.this.extraProps));
 							}
 
 							// Grid pane for dialog box
@@ -250,9 +250,9 @@ public class MapGUI extends Application {
 									// Make sure the text field isn't player, tile layer, or null
 									if (!(layerTextField.getText().equals(Integer.toString(playerVisLayer)) || layerTextField.getText().equals(Integer.toString(tileVisLayer)) || layerTextField.getText().equals(""))) {
 										// Update properties
-										thisObj.visLayer = Integer.parseInt(layerTextField.getText());
-										thisObj.collision = Boolean.parseBoolean(collChoiceBox.getSelectionModel().getSelectedItem());
-										thisObj.extraProps = additTextField.getText().split(",");
+										CanvasObject.this.visLayer = Integer.parseInt(layerTextField.getText());
+										CanvasObject.this.collision = Boolean.parseBoolean(collChoiceBox.getSelectionModel().getSelectedItem());
+										CanvasObject.this.extraProps = additTextField.getText().split(",");
 									}
 								}
 								return null;
@@ -284,7 +284,7 @@ public class MapGUI extends Application {
 				if (event.getButton() == MouseButton.PRIMARY) {
 					if (selectedObjectImage != null) {
 						// Create object Image
-						Image objectImage = null;
+						ImageWithURL objectImage = null;
 						try {
 							objectImage = new ImageWithURL("file:" + workToObjectAsset + relativeSelectedObject);
 							double imgWidth = objectImage.getWidth();
@@ -354,7 +354,6 @@ public class MapGUI extends Application {
 					tileSizeX = (int) tileArtImage.getWidth();
 					tileSizeY = (int) tileArtImage.getHeight();
 				}
-				System.out.println("tileSizeX: " + tileSizeX);
 
 				ImageView selectImageView = new ImageView();
 				selectImageView.setImage(tileArtImage);
