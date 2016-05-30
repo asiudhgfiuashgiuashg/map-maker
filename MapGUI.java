@@ -20,11 +20,7 @@ import javafx.scene.control.*;
 import javafx.scene.image.Image;
 import javafx.scene.image.ImageView;
 import javafx.scene.image.WritableImage;
-import javafx.scene.input.KeyCode;
-import javafx.scene.input.KeyCombination;
-import javafx.scene.input.KeyEvent;
-import javafx.scene.input.MouseButton;
-import javafx.scene.input.MouseEvent;
+import javafx.scene.input.*;
 import javafx.scene.Node;
 import javafx.scene.canvas.Canvas;
 import javafx.scene.canvas.GraphicsContext;
@@ -85,11 +81,13 @@ public class MapGUI extends Application {
 	// Panes
 	final ScrollPane tileScrollPane = new ScrollPane();
 	static final Pane tilePane = new Pane();
-	final GridPane tileGrid = new GridPane();
+	GridPane tileGrid;
 
 	// Add horizontal slider for tiles
 	final ScrollPane selectScrollPane = new ScrollPane();
 	final GridPane selectGridPane = new GridPane();
+
+	private double zoomPercent;
 
 	public static class CanvasObject extends Canvas {
 		// Unique Id
@@ -271,9 +269,10 @@ public class MapGUI extends Application {
 
 	private void initCanvas() {
 		tilePane.getChildren().clear();
+		tileGrid = new GridPane();
 
 		// Create new canvas
-		tileCanvas = new Canvas(tileSizeX * tileCols, tileSizeY * tileRows);
+		tileCanvas = new Canvas(tileSizeX * tileCols * (zoomPercent / 100), tileSizeY * tileRows * (zoomPercent / 100));
 		gc = tileCanvas.getGraphicsContext2D();
 		tilePane.getChildren().add(tileCanvas);
 		tilePane.getChildren().get(0).setId("canvas");
@@ -299,6 +298,8 @@ public class MapGUI extends Application {
 				}
 			}
 		});
+
+
 
 		// Add grid
 		tileScrollPane.setContent(tilePane);
@@ -444,13 +445,17 @@ public class MapGUI extends Application {
 
 				Image inpTileImage = null;
 				try {
-					inpTileImage = new Image("file:" + workToTileAsset + idGrid[j][i]);
+					inpTileImage = new Image("file:" + workToTileAsset + idGrid[j][i], zoomPercent / 100 * tileSizeX, zoomPercent / 100 * tileSizeY, true, false);
+
 				} catch (IllegalArgumentException e) {
 					System.out.println("tile file not found or file out of map-maker directory");
 					System.exit(0);
 				}
 
 				ImageView tileImageView = new ImageView();
+
+
+
 				tileImageView.setImage(inpTileImage);
 				tileGrid.add(tileImageView, j, i);
 
@@ -584,7 +589,7 @@ public class MapGUI extends Application {
 				Optional<String[]> newMapResult = newMapDialog.showAndWait();
 				if (newMapResult.isPresent()) {
 					// Clear grid
-					tileGrid.getChildren().clear();
+					//tileGrid.getChildren().clear();
 
 					// Get inputs from the create map dialog box
 					tileRows = Integer.parseInt(newMapResult.get()[0]);
@@ -809,8 +814,10 @@ public class MapGUI extends Application {
 
 	@Override
 	public void start(Stage primaryStage) {
+		zoomPercent = 100;
+
 		primaryStage.setTitle("MapGUI");
-		Scene primaryScene = new Scene(new VBox(), windowWidth, windowHeight);
+		Scene primaryScene = new Scene(new GridPane(), windowWidth, windowHeight);
 
 		tileScrollPane.setPrefWidth(800);
 		tileScrollPane.setPrefHeight(600);
@@ -830,6 +837,22 @@ public class MapGUI extends Application {
 
 		Menu menuEdit = new Menu("Edit");
 		createEditMenu(primaryStage, menuEdit);
+
+		// ---------------------------------------------------------------------//
+		///////////////////
+		// Zoom amt field//
+		///////////////////
+		TextField zoomField = new TextField("100");
+		zoomField.setPromptText("Zoom %");
+		zoomField.setMinWidth(80);
+		zoomField.setOnKeyPressed(new EventHandler<KeyEvent>() {
+			public void handle(KeyEvent kEvent) {
+				if (kEvent.getCode() == KeyCode.ENTER) {
+					zoomPercent = Double.parseDouble(zoomField.getText());
+					fillTileGrid();
+				}
+			}
+		});
 
 		// ----------------------------------------------------------------------//
 		////////////////////////
@@ -865,13 +888,22 @@ public class MapGUI extends Application {
 		//////////////////////
 		// almost done boiz //
 		//////////////////////
+		//kek
 		
 		// Menu Bar
 		MenuBar menuBar = new MenuBar();
 		menuBar.getMenus().addAll(menuFile, menuEdit);
 
 		// Add elements to scene
-		((VBox) primaryScene.getRoot()).getChildren().addAll(menuBar, tileScrollPane, selectScrollPane, tileSearchBox);
+		//((GridPane) primaryScene.getRoot()).getChildren().addAll(menuBar, tileScrollPane, selectScrollPane, tileSearchBox, zoomField);
+		GridPane gPane = ((GridPane) primaryScene.getRoot());
+		gPane.add(menuBar, 0, 0);
+		gPane.add(tileScrollPane, 0, 1);
+		gPane.add(selectScrollPane, 0, 2);
+		gPane.add(tileSearchBox, 0, 3);
+		gPane.add(zoomField, 1, 3);
+
+
 
 		// Show GUI
 		primaryStage.setScene(primaryScene);
