@@ -131,17 +131,7 @@ public class MapGUI extends Application {
 			}
 		});
 
-		/**
-		 * use the scroll wheel to zoom in and out when in object edit mode
-		 */
-		tilePane.setOnScroll(new EventHandler<ScrollEvent>() {
-			@Override
-			public void handle(ScrollEvent event) {
-				zoomPercent += event.getDeltaY();
-				zoomField.setText(String.valueOf(zoomPercent));
-				zoom();
-			}
-		});
+		
 
 
 
@@ -663,7 +653,21 @@ public class MapGUI extends Application {
 
 	@Override
 	public void start(Stage primaryStage) {
+
+
 		zoomPercent = 100;
+
+		/**
+		 * use the scroll wheel to zoom in and out
+		 */
+		tilePane.setOnScroll(new EventHandler<ScrollEvent>() {
+			@Override
+			public void handle(ScrollEvent event) {
+				zoomPercent += event.getDeltaY();
+				zoomField.setText(String.valueOf(zoomPercent));
+				zoom();
+			}
+		});
 
 		primaryStage.setTitle("MapGUI");
 		Scene primaryScene = new Scene(new GridPane(), windowWidth, windowHeight);
