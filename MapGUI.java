@@ -89,7 +89,7 @@ public class MapGUI extends Application {
 	final GridPane selectGridPane = new GridPane();
 
 	private double zoomPercent;
-
+	private TextField zoomField;
 	
 
 	private void updateTileCanvasDimensions() {
@@ -128,6 +128,18 @@ public class MapGUI extends Application {
 						}
 					}
 				}
+			}
+		});
+
+		/**
+		 * use the scroll wheel to zoom in and out when in object edit mode
+		 */
+		tileCanvas.setOnScroll(new EventHandler<ScrollEvent>() {
+			@Override
+			public void handle(ScrollEvent event) {
+				zoomPercent += event.getDeltaY();
+				zoomField.setText(String.valueOf(zoomPercent));
+				zoom();
 			}
 		});
 
@@ -679,7 +691,7 @@ public class MapGUI extends Application {
 		///////////////////
 		// Zoom amt field//
 		///////////////////
-		TextField zoomField = new TextField("100");
+		zoomField = new TextField("100");
 		zoomField.setPromptText("Zoom %");
 		zoomField.setMinWidth(80);
 		zoomField.setOnKeyPressed(new EventHandler<KeyEvent>() {
