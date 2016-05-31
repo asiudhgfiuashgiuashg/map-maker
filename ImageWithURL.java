@@ -23,6 +23,11 @@ public class ImageWithURL extends Image {
 		this.url = url;
 	}
 
+	public ImageWithURL(String url, boolean backgroundLoading) {
+		super(url, backgroundLoading);
+		this.url = url;
+	}
+
 	public String getURL() {
 		return url;
 	}

@@ -97,13 +97,13 @@ public class MapGUI extends Application {
 		private static int uidIncrementer = 0;
 
 		// Canvas dimensions
-		private Image objectImage;
-		private double imgWidth;
-		private double imgHeight;
+		protected Image objectImage; //image after scaling with zoom
+		protected double imgWidth; //image height after scaling with zoom
+		protected double imgHeight; //image width after scaling with zoom
 
 		// Object properties
 		public String fileName;
-		public double x;
+		public double x; //the "real" position of the object aka its position at 100% zoom scaling
 		public double y;
 		public int visLayer;
 		public Boolean collision;
@@ -119,8 +119,10 @@ public class MapGUI extends Application {
 		private final int defVisLayer = 9;
 		private final Boolean defCollision = true;
 
-		public CanvasObject(Image objectImage, double imgWidth, double imgHeight, String fileName, double x, double y) {
-			super(imgWidth, imgHeight);
+		private double zoomPercent; // the percentage by which the map is zoomed in the map maker.
+									// we need this value to know how big to make the object's image
+
+		public CanvasObject(Image objectImage, double imgWidth, double imgHeight, String fileName, double x, double y, double zoomPercent) {
 			this.objectImage = objectImage;
 			this.imgWidth = imgWidth;
 			this.imgHeight = imgHeight;
@@ -131,10 +133,10 @@ public class MapGUI extends Application {
 			this.collision = defCollision;
 			this.extraProps = null;
 			CreateObject();
+			setZoomPercent(zoomPercent);
 		}
 
-		public CanvasObject(Image objectImage, double imgWidth, double imgHeight, String fileName, double x, double y, int visLayer, Boolean collision, String[] extraProps) {
-			super(imgWidth, imgHeight);
+		public CanvasObject(Image objectImage, double imgWidth, double imgHeight, String fileName, double x, double y, double zoomPercent, int visLayer, Boolean collision, String[] extraProps) {
 			this.objectImage = objectImage;
 			this.imgWidth = imgWidth;
 			this.imgHeight = imgHeight;
@@ -145,6 +147,7 @@ public class MapGUI extends Application {
 			this.collision = collision;
 			this.extraProps = extraProps;
 			CreateObject();
+			setZoomPercent(zoomPercent);
 		}
 
 		public void CreateObject() {
@@ -153,11 +156,6 @@ public class MapGUI extends Application {
 			// Set Unique Id
 			this.setId("object" + uidIncrementer);
 			uidIncrementer++;
-
-			// Draw image
-			this.getGraphicsContext2D().drawImage(objectImage, 0, 0);
-			this.setTranslateX(CanvasObject.this.x - CanvasObject.this.imgWidth / 2);
-			this.setTranslateY(CanvasObject.this.y - CanvasObject.this.imgHeight / 2);
 
 			// Add to Pane
 			tilePane.getChildren().add(CanvasObject.this);
@@ -168,10 +166,10 @@ public class MapGUI extends Application {
 				public void handle(MouseEvent event) {
 					if (event.getButton() == MouseButton.PRIMARY) {
 						// Update position
-						CanvasObject.this.x = event.getX() + CanvasObject.this.getTranslateX();
-						CanvasObject.this.y = event.getY() + CanvasObject.this.getTranslateY();
-						CanvasObject.this.setTranslateX(CanvasObject.this.x - CanvasObject.this.imgWidth / 2);
-						CanvasObject.this.setTranslateY(CanvasObject.this.y - CanvasObject.this.imgHeight / 2);
+						CanvasObject.this.x = fromScaled(event.getX() + CanvasObject.this.getTranslateX(), zoomPercent);
+						CanvasObject.this.y = fromScaled(event.getY() + CanvasObject.this.getTranslateY(), zoomPercent);
+						CanvasObject.this.setTranslateX(toScaled(CanvasObject.this.x, zoomPercent) - CanvasObject.this.imgWidth / 2);
+						CanvasObject.this.setTranslateY(toScaled(CanvasObject.this.y, zoomPercent) - CanvasObject.this.imgHeight / 2);
 					}
 				}
 			});
@@ -270,6 +268,49 @@ public class MapGUI extends Application {
 				}
 			});
 		}
+
+		/**
+		 * set the canvas which will contain object's image to be the same size as the image
+		 *  and then draw the image on the canvas
+		 */
+		private void drawImage() {
+			this.setWidth(imgWidth);
+			this.setHeight(imgHeight);
+			//clear the canvas for this object
+			this.getGraphicsContext2D().clearRect(0, 0, this.getWidth(), this.getHeight());
+
+			// Draw image onto the object's canvas
+			this.getGraphicsContext2D().drawImage(objectImage, 0, 0);
+			this.setTranslateX(toScaled(CanvasObject.this.x, zoomPercent) - CanvasObject.this.imgWidth / 2);
+			this.setTranslateY(toScaled(CanvasObject.this.y, zoomPercent) - CanvasObject.this.imgHeight / 2);
+		}
+
+		/**
+		 * zoom this canvasobject by some zoom percentage. This will scale the image and also translate it to the correct position
+		 */
+		protected void setZoomPercent(double newZoom) {
+			this.zoomPercent = newZoom;
+
+			ImageWithURL objImage = (ImageWithURL) objectImage;
+			String objImageURL = objImage.getURL();
+
+			//get the original dimensions of the object's image
+			Image unzoomedImage = new Image(objImageURL);
+			double unzoomedWidth = unzoomedImage.getWidth();
+			double unzoomedHeight = unzoomedImage.getHeight();
+
+			//now create a scaled (zoomed) version of the image to display as the object on the map
+			ImageWithURL zoomedImage = new ImageWithURL(objImageURL, zoomPercent / 100 * unzoomedWidth, zoomPercent / 100 * unzoomedHeight, true, false, false);
+			objectImage = zoomedImage;
+			imgWidth = zoomedImage.getWidth();
+			imgHeight = zoomedImage.getHeight();
+			drawImage();
+		}
+	}
+
+	private void updateTileCanvasDimensions() {
+		tileCanvas.setWidth(tileSizeX * tileCols * (zoomPercent / 100));
+		tileCanvas.setHeight(tileSizeY * tileRows * (zoomPercent / 100));
 	}
 
 	private void initCanvas() {
@@ -277,7 +318,8 @@ public class MapGUI extends Application {
 		tileGrid = new GridPane();
 
 		// Create new canvas
-		tileCanvas = new Canvas(tileSizeX * tileCols * (zoomPercent / 100), tileSizeY * tileRows * (zoomPercent / 100));
+		tileCanvas = new Canvas();
+		updateTileCanvasDimensions();
 		gc = tileCanvas.getGraphicsContext2D();
 		tilePane.getChildren().add(tileCanvas);
 		tilePane.getChildren().get(0).setId("canvas");
@@ -288,7 +330,6 @@ public class MapGUI extends Application {
 			public void handle(MouseEvent event) {
 				if (event.getButton() == MouseButton.PRIMARY) {
 					if (selectedObjectImage != null) {
-						System.out.println("placing an object");
 						// Create object Image
 						ImageWithURL objectImage = null;
 						try {
@@ -296,7 +337,7 @@ public class MapGUI extends Application {
 							double imgWidth = objectImage.getWidth();
 							double imgHeight = objectImage.getHeight();
 							objectImage = new ImageWithURL("file:" + workToObjectAsset + relativeSelectedObject, zoomPercent / 100 * imgWidth, zoomPercent / 100 * imgHeight, true, false, false);
-							new CanvasObject(objectImage, imgWidth * (zoomPercent / 100), imgHeight * (zoomPercent / 100), relativeSelectedObject, event.getX(), event.getY());
+							new CanvasObject(objectImage, imgWidth * (zoomPercent / 100), imgHeight * (zoomPercent / 100), relativeSelectedObject, fromScaled(event.getX(), zoomPercent), fromScaled(event.getY(), zoomPercent), zoomPercent);
 						} catch (IllegalArgumentException e) {
 							System.out.println("object file not found or file out of map-maker directory");
 							System.exit(0);
@@ -689,7 +730,7 @@ public class MapGUI extends Application {
 								objectImage = new ImageWithURL("file:" + workToObjectAsset + fileName, false);
 								double imgWidth = objectImage.getWidth();
 								double imgHeight = objectImage.getHeight();
-								new CanvasObject(objectImage, imgWidth, imgHeight, fileName, x, y, visLayer, collision, extraProps);
+								new CanvasObject(objectImage, imgWidth, imgHeight, fileName, x, y, zoomPercent, visLayer, collision, extraProps);
 								System.out.println("loaded an object at pos (" + x + ", " + y + ")");
 							} catch (IllegalArgumentException e) {
 								System.out.println("object file not found or file out of map-maker directory");
@@ -862,7 +903,7 @@ public class MapGUI extends Application {
 			public void handle(KeyEvent kEvent) {
 				if (kEvent.getCode() == KeyCode.ENTER) {
 					zoomPercent = Double.parseDouble(zoomField.getText());
-					zoomTileGrid();
+					zoom();
 /*					fillTileGrid();
 					swapTilePaneChildren();
 					for (CanvasObject canvasObject: CanvasObject.canvasObjects) {
@@ -928,7 +969,15 @@ public class MapGUI extends Application {
 		primaryStage.show();
 	}
 
-	private void zoomTileGrid() {
+	/**
+	 * scale the tile grid and objects on the grid
+	 */
+	private void zoom() {
+
+		//update canvas size to contain all of the tiles
+		updateTileCanvasDimensions();
+
+		//scale(zoom) all of the tiles
 		for (int col = 0; col < tileImageViewGrid.length; col++) {
 			for (int row = 0; row < tileImageViewGrid[0].length; row++) {
 				ImageView tileImageView = tileImageViewGrid[col][row];
@@ -938,5 +987,27 @@ public class MapGUI extends Application {
 				tileImageView.setImage(zoomedImage);
 			}
 		}
+
+
+		for (CanvasObject canvasObject: CanvasObject.canvasObjects) {
+			canvasObject.setZoomPercent(zoomPercent);
+		}
+	}
+
+	/**
+	 * convert a scaled coordinate to 100% scale
+	 * example: if the zoom percentage is 200%, this will return half of what you pass in
+	 */
+	private static double fromScaled(double scaledCoord, double zoomPercent) {
+		return scaledCoord / (zoomPercent / 100);
+	}
+
+	/**
+	 * scale a coordinate by a percentage
+	 * @param toScale what you want to scale
+	 * @param zoomPercent the percentage by which to scale the coordinate value
+	 */
+	private static double toScaled(double toScale, double zoomPercent) {
+		return toScale * (zoomPercent / 100);
 	}
 }
