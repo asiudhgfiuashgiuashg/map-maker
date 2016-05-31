@@ -134,7 +134,7 @@ public class MapGUI extends Application {
 		/**
 		 * use the scroll wheel to zoom in and out when in object edit mode
 		 */
-		tileCanvas.setOnScroll(new EventHandler<ScrollEvent>() {
+		tilePane.setOnScroll(new EventHandler<ScrollEvent>() {
 			@Override
 			public void handle(ScrollEvent event) {
 				zoomPercent += event.getDeltaY();
