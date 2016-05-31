@@ -77,6 +77,7 @@ public class MapGUI extends Application {
 	private String[][] idGrid;
 	private Canvas tileCanvas;
 	private GraphicsContext gc;
+	private ImageView[][] tileImageViewGrid;
 
 	// Panes
 	final ScrollPane tileScrollPane = new ScrollPane();
@@ -90,6 +91,8 @@ public class MapGUI extends Application {
 	private double zoomPercent;
 
 	public static class CanvasObject extends Canvas {
+		protected static final List<CanvasObject> canvasObjects = new ArrayList<>();
+
 		// Unique Id
 		private static int uidIncrementer = 0;
 
@@ -145,6 +148,8 @@ public class MapGUI extends Application {
 		}
 
 		public void CreateObject() {
+			CanvasObject.canvasObjects.add(this);
+
 			// Set Unique Id
 			this.setId("object" + uidIncrementer);
 			uidIncrementer++;
@@ -283,13 +288,15 @@ public class MapGUI extends Application {
 			public void handle(MouseEvent event) {
 				if (event.getButton() == MouseButton.PRIMARY) {
 					if (selectedObjectImage != null) {
+						System.out.println("placing an object");
 						// Create object Image
 						ImageWithURL objectImage = null;
 						try {
 							objectImage = new ImageWithURL("file:" + workToObjectAsset + relativeSelectedObject);
 							double imgWidth = objectImage.getWidth();
 							double imgHeight = objectImage.getHeight();
-							new CanvasObject(objectImage, imgWidth, imgHeight, relativeSelectedObject, event.getX(), event.getY());
+							objectImage = new ImageWithURL("file:" + workToObjectAsset + relativeSelectedObject, zoomPercent / 100 * imgWidth, zoomPercent / 100 * imgHeight, true, false, false);
+							new CanvasObject(objectImage, imgWidth * (zoomPercent / 100), imgHeight * (zoomPercent / 100), relativeSelectedObject, event.getX(), event.getY());
 						} catch (IllegalArgumentException e) {
 							System.out.println("object file not found or file out of map-maker directory");
 							System.exit(0);
@@ -440,6 +447,7 @@ public class MapGUI extends Application {
 		drawSelectionTiles();
 
 		// Now fill in grid with tiles
+		tileImageViewGrid = new ImageView[tileCols][tileRows];
 		for (int i = 0; i < tileRows; i++) {
 			for (int j = 0; j < tileCols; j++) {
 
@@ -458,6 +466,7 @@ public class MapGUI extends Application {
 
 				tileImageView.setImage(inpTileImage);
 				tileGrid.add(tileImageView, j, i);
+				tileImageViewGrid[j][i] = tileImageView;
 
 				// On mouse click of grid tiles
 				tileImageView.setId(Integer.toString(i) + ":" + Integer.toString(j));
@@ -677,10 +686,11 @@ public class MapGUI extends Application {
 							// Create object
 							Image objectImage = null;
 							try {
-								objectImage = new ImageWithURL("file:" + workToObjectAsset + fileName);
+								objectImage = new ImageWithURL("file:" + workToObjectAsset + fileName, false);
 								double imgWidth = objectImage.getWidth();
 								double imgHeight = objectImage.getHeight();
 								new CanvasObject(objectImage, imgWidth, imgHeight, fileName, x, y, visLayer, collision, extraProps);
+								System.out.println("loaded an object at pos (" + x + ", " + y + ")");
 							} catch (IllegalArgumentException e) {
 								System.out.println("object file not found or file out of map-maker directory");
 								System.exit(0);
@@ -734,14 +744,11 @@ public class MapGUI extends Application {
 
 						// Write objects in JSON format
 						JSONArray jsonObjArray = new JSONArray();
-						List<CanvasObject> objList = new ArrayList<CanvasObject>();
-						for (Node obj : tilePane.getChildren()) {
-							if (obj instanceof CanvasObject) {
+						for (CanvasObject canvasObj: CanvasObject.canvasObjects) {
 								// JSON Object that holds base and extra props
 								JSONObject properties = new JSONObject();
 
 								// First entry: base properties as obj
-								CanvasObject canvasObj = (CanvasObject) obj;
 								JSONObject jsonObj = new JSONObject();
 								jsonObj.put("fileName", canvasObj.fileName);
 								jsonObj.put("x", canvasObj.x);
@@ -762,7 +769,6 @@ public class MapGUI extends Application {
 
 								// Add properties object to Object Array
 								jsonObjArray.add(properties);
-							}
 						}
 						// Put array of all property objects into FileObj
 						jsonFileObj.put("objects", jsonObjArray);
@@ -856,7 +862,12 @@ public class MapGUI extends Application {
 			public void handle(KeyEvent kEvent) {
 				if (kEvent.getCode() == KeyCode.ENTER) {
 					zoomPercent = Double.parseDouble(zoomField.getText());
-					fillTileGrid();
+					zoomTileGrid();
+/*					fillTileGrid();
+					swapTilePaneChildren();
+					for (CanvasObject canvasObject: CanvasObject.canvasObjects) {
+						tilePane.getChildren().add(canvasObject);
+					}*/
 				}
 			}
 		});
@@ -915,5 +926,17 @@ public class MapGUI extends Application {
 		// Show GUI
 		primaryStage.setScene(primaryScene);
 		primaryStage.show();
+	}
+
+	private void zoomTileGrid() {
+		for (int col = 0; col < tileImageViewGrid.length; col++) {
+			for (int row = 0; row < tileImageViewGrid[0].length; row++) {
+				ImageView tileImageView = tileImageViewGrid[col][row];
+				ImageWithURL tileImage = (ImageWithURL) tileImageView.getImage();
+				String tileImageURL = tileImage.getURL();
+				ImageWithURL zoomedImage = new ImageWithURL(tileImageURL, zoomPercent / 100 * tileSizeX, zoomPercent / 100 * tileSizeY, true, false, false);
+				tileImageView.setImage(zoomedImage);
+			}
+		}
 	}
 }
