@@ -139,6 +139,10 @@ public class MapGUI extends Application {
 
 		// Add grid
 		tileScrollPane.setContent(tilePane);
+		// Let the ScrollPane.viewRect only pan on middle button. -- http://stackoverflow.com/questions/35232475/javafx-how-to-make-a-scrollpane-pan-only-on-middle-button
+		tilePane.addEventHandler(MouseEvent.ANY, event -> {
+		    if(event.getButton() != MouseButton.MIDDLE) event.consume();
+		});
 		tilePane.getChildren().add(tileGrid);
 		tilePane.getChildren().get(1).setId("grid");
 
