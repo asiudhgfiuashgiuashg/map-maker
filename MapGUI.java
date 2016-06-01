@@ -654,7 +654,7 @@ public class MapGUI extends Application {
 	@Override
 	public void start(Stage primaryStage) {
 
-
+		tileScrollPane.setPannable(true);
 		zoomPercent = 100;
 
 		/**
