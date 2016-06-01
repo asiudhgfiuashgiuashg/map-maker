@@ -116,12 +116,14 @@ public class MapGUI extends Application {
 					if (selectedObjectImage != null) {
 						// Create object Image
 						ImageWithURL objectImage = null;
+						CanvasObject canvasObj = null;
 						try {
 							objectImage = new ImageWithURL("file:" + workToObjectAsset + relativeSelectedObject);
 							double imgWidth = objectImage.getWidth();
 							double imgHeight = objectImage.getHeight();
 							objectImage = new ImageWithURL("file:" + workToObjectAsset + relativeSelectedObject, zoomPercent / 100 * imgWidth, zoomPercent / 100 * imgHeight, true, false, false);
-							tilePane.getChildren().add(new CanvasObject(objectImage, imgWidth * (zoomPercent / 100), imgHeight * (zoomPercent / 100), relativeSelectedObject, fromScaled(event.getX(), zoomPercent), fromScaled(event.getY(), zoomPercent), zoomPercent));
+							canvasObj = new CanvasObject(objectImage, imgWidth * (zoomPercent / 100), imgHeight * (zoomPercent / 100), relativeSelectedObject, fromScaled(event.getX(), zoomPercent), fromScaled(event.getY(), zoomPercent), zoomPercent);
+							tilePane.getChildren().add(canvasObj);
 						} catch (IllegalArgumentException e) {
 							System.out.println("object file not found or file out of map-maker directory");
 							System.exit(0);
@@ -512,11 +514,13 @@ public class MapGUI extends Application {
 
 							// Create object
 							Image objectImage = null;
+							CanvasObject canvasObj = null;
 							try {
 								objectImage = new ImageWithURL("file:" + workToObjectAsset + fileName, false);
 								double imgWidth = objectImage.getWidth();
 								double imgHeight = objectImage.getHeight();
-								tilePane.getChildren().add(new CanvasObject(objectImage, imgWidth, imgHeight, fileName, x, y, zoomPercent, visLayer, collision, extraProps));
+								canvasObj = new CanvasObject(objectImage, imgWidth, imgHeight, fileName, x, y, zoomPercent, visLayer, collision, extraProps);
+								tilePane.getChildren().add(canvasObj);
 							} catch (IllegalArgumentException e) {
 								System.out.println("object file not found or file out of map-maker directory");
 								System.exit(0);
